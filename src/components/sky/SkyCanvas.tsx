@@ -1,7 +1,9 @@
+'use client'
+
 import { useEffect, useRef } from 'react'
 import type { PointerEvent } from 'react'
-import { SkyEngine } from '../engine/SkyEngine'
-import type { SkyConfig } from '../engine/SkyEngine'
+import { SkyEngine } from '@/engine/SkyEngine'
+import type { SkyConfig } from '@/engine/SkyEngine'
 import './SkyCanvas.css'
 
 type SkyCanvasProps = {
@@ -35,7 +37,6 @@ const SkyCanvas = ({ config, onFps, gyroEnabled }: SkyCanvasProps) => {
       },
       { onFps },
     )
-    engine.setConfig(config)
     engineRef.current = engine
     engine.start()
     return () => {

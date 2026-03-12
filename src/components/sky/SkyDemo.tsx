@@ -1,8 +1,10 @@
+'use client'
+
 import { useCallback, useState } from 'react'
-import DemoControls from '../components/DemoControls'
-import type { GyroStatus } from '../components/DemoControls'
-import SkyCanvas from '../components/SkyCanvas'
-import type { MotionMode, SkyConfig } from '../engine/SkyEngine'
+import DemoControls from './DemoControls'
+import type { GyroStatus } from './DemoControls'
+import SkyCanvas from './SkyCanvas'
+import type { MotionMode, SkyConfig } from '@/engine/SkyEngine'
 import './SkyDemo.css'
 
 const defaultConfig: SkyConfig = {

@@ -62,6 +62,7 @@
   border: 1px solid rgba(110, 150, 230, 0.35);
   background: rgba(12, 18, 36, 0.85);
   color: #dfe9ff;
+  cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 

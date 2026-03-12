@@ -1,5 +1,7 @@
+'use client'
+
+import type { MotionMode, QualityLevel, SkyConfig } from '@/engine/SkyEngine'
 import './DemoControls.css'
-import type { MotionMode, QualityLevel, SkyConfig } from '../engine/SkyEngine'
 
 export type GyroStatus = 'idle' | 'granted' | 'denied' | 'unsupported'
 
