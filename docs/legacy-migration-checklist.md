@@ -22,6 +22,10 @@ Checklist operativo para cerrar Fase 0 antes de ejecutar cualquier migracion rea
   - `yNormalized = clamp(y / 100, 0, 1)`
 - Migrar la estrella sin imagen con `imagePath = null`.
 - Mantener la coleccion legacy `stars` intacta hasta validar migracion final.
+- Importar este dataset en un unico cielo manual `shared-legacy-v1`.
+- Persistir los identificadores brutos observados como `legacyCreatorKeys`, no como una interpretacion de participantes.
+- El cielo importado nace con `claimStatus = unclaimed` y sin `owner` asignado.
+- Tratar `scripts/audit-report.json` y `scripts/migration-crossref-report.json` como archivos locales sensibles.
 
 ## Backups requeridos antes de migrar
 
@@ -39,14 +43,14 @@ Checklist operativo para cerrar Fase 0 antes de ejecutar cualquier migracion rea
 - [ ] Conteo esperado de assets huerfanos en `stars/`: `1`.
 - [ ] Cero estrellas con `imageMigrationStatus = missing_in_cloudinary_report`.
 - [ ] Cero coordenadas normalizadas fuera de `0..1`.
-- [ ] Conteo por `createdBy` confirmado para crear un cielo importado por autor.
+- [ ] `legacyCreatorKeys` confirmados para el cielo manual `shared-legacy-v1`.
 - [ ] Politica de exclusiones documentada y aprobada.
 
 ## Cola de implementacion
 
 1. Script de cruce Firestore -> Cloudinary -> reporte.
 2. Script de migracion de imagenes referenciadas a Firebase Storage.
-3. Script de migracion de estrellas a nuevo esquema con `xNormalized` y `yNormalized`.
+3. Script de migracion de estrellas a nuevo esquema bajo `shared-legacy-v1`, con `xNormalized`, `yNormalized` y `legacyCreatorKey`.
 4. Script de validacion post-migracion con diff de conteos y media.
 
 ## Comandos de referencia

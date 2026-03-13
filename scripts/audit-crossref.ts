@@ -30,6 +30,8 @@ const SERVICE_ACCOUNT_PATH = resolve(
   process.cwd(),
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './scripts/serviceAccountKey.json',
 )
+const IMPORT_BATCH = 'shared-legacy-v1'
+const IMPORTED_SKY_ID = 'shared-legacy-v1'
 
 type LegacyStar = {
   createdAt?: unknown
@@ -88,6 +90,27 @@ type ImportableStar = {
   recommendedStoragePath: string | null
 }
 
+type ImportedSkyPlan = {
+  skyId: string
+  title: string
+  source: 'legacy_import'
+  importBatch: typeof IMPORT_BATCH
+  claimStatus: 'unclaimed'
+  ownerUserId: null
+  claimedByUserIds: []
+  legacyCreatorKeys: string[]
+  defaultMemberRoleAfterFirstApprovedClaim: 'legacy_claimant'
+  memberRolesAfterFullClaimResolution: ['owner', 'editor']
+  personalization: {
+    theme: 'classic'
+    density: 'medium'
+    nebulaEnabled: true
+    twinkleEnabled: true
+    shootingStarsEnabled: true
+  }
+  starCount: number
+}
+
 type CrossrefReport = {
   summary: {
     totalLegacyStars: number
@@ -103,6 +126,11 @@ type CrossrefReport = {
   migrationPolicy: {
     cloudinaryScope: 'only_firestorereferenced_assets'
     coordinateStrategy: 'normalize_percent_scale_to_unit_range'
+    legacyImportMode: 'manual_single_shared_legacy'
+    importedSkyId: typeof IMPORTED_SKY_ID
+    importBatch: typeof IMPORT_BATCH
+    importedSkyInitialClaimStatus: 'unclaimed'
+    ownershipAssignmentOnImport: 'none'
     firestoreBackupRequirement: 'export_to_gcs_before_any_write'
     localSnapshotsRequired: string[]
     orphanedAssetPolicy: 'excluded_pending_review'
@@ -111,10 +139,8 @@ type CrossrefReport = {
   orphaned_in_stars: OrphanedAsset[]
   non_migration_assets: NonMigrationAsset[]
   importPlan: {
-    skies: Array<{
-      legacyCreatorKey: string
-      starCount: number
-    }>
+    decisionMode: 'manual_single_shared_legacy'
+    sky: ImportedSkyPlan
     stars: ImportableStar[]
   }
 }
@@ -275,9 +301,27 @@ async function main() {
           : 'root_asset',
     }))
 
-  const skies = Object.entries(creators)
-    .sort((a, b) => b[1] - a[1])
-    .map(([legacyCreatorKey, starCount]) => ({ legacyCreatorKey, starCount }))
+  const legacyCreatorKeys = Object.keys(creators).sort()
+  const importedSky: ImportedSkyPlan = {
+    skyId: IMPORTED_SKY_ID,
+    title: 'Cielo legacy importado',
+    source: 'legacy_import',
+    importBatch: IMPORT_BATCH,
+    claimStatus: 'unclaimed',
+    ownerUserId: null,
+    claimedByUserIds: [],
+    legacyCreatorKeys,
+    defaultMemberRoleAfterFirstApprovedClaim: 'legacy_claimant',
+    memberRolesAfterFullClaimResolution: ['owner', 'editor'],
+    personalization: {
+      theme: 'classic',
+      density: 'medium',
+      nebulaEnabled: true,
+      twinkleEnabled: true,
+      shootingStarsEnabled: true,
+    },
+    starCount: legacyStars.length,
+  }
 
   const report: CrossrefReport = {
     summary: {
@@ -294,6 +338,11 @@ async function main() {
     migrationPolicy: {
       cloudinaryScope: 'only_firestorereferenced_assets',
       coordinateStrategy: 'normalize_percent_scale_to_unit_range',
+      legacyImportMode: 'manual_single_shared_legacy',
+      importedSkyId: IMPORTED_SKY_ID,
+      importBatch: IMPORT_BATCH,
+      importedSkyInitialClaimStatus: 'unclaimed',
+      ownershipAssignmentOnImport: 'none',
       firestoreBackupRequirement: 'export_to_gcs_before_any_write',
       localSnapshotsRequired: ['scripts/audit-report.json', 'scripts/cloudinary-report.json', 'scripts/migration-crossref-report.json'],
       orphanedAssetPolicy: 'excluded_pending_review',
@@ -302,7 +351,8 @@ async function main() {
     orphaned_in_stars: orphanedInStars,
     non_migration_assets: nonMigrationAssets,
     importPlan: {
-      skies,
+      decisionMode: 'manual_single_shared_legacy',
+      sky: importedSky,
       stars: legacyStars,
     },
   }
@@ -318,6 +368,8 @@ async function main() {
   console.log(`Estrellas sin imagen: ${report.summary.starsWithoutImage}`)
   console.log(`Estrellas con imagen valida: ${report.summary.starsWithReferencedImage}`)
   console.log(`Estrellas con imagen faltante en Cloudinary: ${report.summary.starsWithMissingCloudinaryImage}`)
+  console.log(`Cielo importado manual: ${report.importPlan.sky.skyId}`)
+  console.log(`Claim status inicial: ${report.importPlan.sky.claimStatus}`)
 
   if (report.orphaned_in_stars.length) {
     console.log('\nHuerfanos en stars/:')

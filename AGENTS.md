@@ -52,6 +52,7 @@ npm run audit:crossref     # -> scripts/migration-crossref-report.json
 - `src/app/`: Next.js App Router. Home redirects to `/demo`.
 - `src/app/demo/`: demo route and loader for the visual baseline.
 - `src/components/sky/`: React UI layer around the sky renderer.
+- `src/domain/`: shared product and data contracts agreed before runtime features land.
 - `src/engine/SkyEngine.ts`: Canvas 2D visual engine and animation loop.
 - `scripts/`: audit scripts and JSON reports for legacy inspection.
 - `docs/`: master document and migration checklist.
@@ -118,6 +119,7 @@ Si la respuesta es "no" a las 3, no proponerlo.
 
 - `sky` is the root entity; stars must belong to a sky.
 - The legacy `stars` collection stays intact during migration.
+- The current legacy dataset is imported by explicit manual rule as one sky: `shared-legacy-v1`.
 - Legacy coordinates are preserved approximately as normalized values:
   - `xNormalized = clamp(x / 100, 0, 1)`
   - `yNormalized = clamp(y / 100, 0, 1)`
@@ -126,6 +128,10 @@ Si la respuesta es "no" a las 3, no proponerlo.
 - Cloudinary is a legacy source, not the target media platform.
 - Only the 26 images referenced by Firestore are candidates for automatic migration.
 - The orphan asset `stars/vnpubgfatrjzrepaccrz` stays excluded pending review.
+- Legacy creator identifiers are stored as raw `legacyCreatorKeys`.
+- The first approved legacy claim does not create an `owner`; it creates a limited `legacy_claimant`.
+- Claim evidence must be stored only as `evidenceSummary`, never as raw intimate content copied from legacy data.
+- Claim legacy and invitation acceptance require verified email.
 - Backup before migration is mandatory:
   - official Firestore export to GCS
   - local audit snapshots kept current
@@ -137,6 +143,7 @@ Si la respuesta es "no" a las 3, no proponerlo.
 - Treat the legacy checklist as an operational gate, not as optional documentation.
 - Never write to the legacy collection as part of exploratory work.
 - Migration scripts must be idempotent, traceable, and safe to re-run.
+- Do not reintroduce import-by-`createdBy` as the active migration rule for the current dataset.
 - If changing migration behavior, update the master document and checklist in the same turn when appropriate.
 - Prefer repository-consistent solutions: Next.js App Router, focused modules, plain CSS, minimal abstractions.
 

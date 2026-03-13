@@ -73,6 +73,7 @@ Notas:
 - `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y no debe versionarse.
 - Las variables `NEXT_PUBLIC_*` se dejan preparadas para Fase 2; hoy la app aun no las consume.
 - Cloudinary solo es necesario para `audit:cloudinary`.
+- Los reportes de auditoria legacy pueden contener contenido real del sistema anterior y deben tratarse como archivos locales sensibles.
 
 ## Scripts
 
@@ -144,6 +145,8 @@ Politica actual cerrada:
 - Solo se migran assets referenciados por Firestore.
 - Los assets en `samples/**`, assets root y el huerfano de `stars/` quedan fuera del import automatico.
 - Las coordenadas legacy se preservan de forma aproximada como valores normalizados `0..1`.
+- Para este dataset, la importacion se resuelve de forma manual como un unico cielo `shared-legacy-v1`; no se infiere automaticamente por `createdBy`.
+- El claim legacy requiere email verificado, revision administrativa y el primer claim aprobado solo habilita acceso limitado como `legacy_claimant`.
 
 ## Documentacion
 
