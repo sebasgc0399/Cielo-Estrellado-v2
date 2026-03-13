@@ -77,6 +77,17 @@ Ejemplo de campos observados en el legado:
 - `y`
 - `year`
 
+Hallazgos confirmados por auditoria real:
+
+- `27` estrellas legacy en Firestore.
+- `2` creadores unicos.
+- `26` estrellas con imagen y `1` sin imagen.
+- Coordenadas legacy en escala aproximada `0-100`.
+- `80` assets totales en Cloudinary.
+- Solo `26` assets realmente referenciados por Firestore.
+- `1` asset huerfano en `stars/`: `stars/vnpubgfatrjzrepaccrz`.
+- `53` assets de Cloudinary quedan fuera de la migracion automatica (`samples/**` y assets root).
+
 ### Que se conserva y que no
 
 Se conserva:
@@ -390,9 +401,26 @@ La migracion debe ser segura, trazable e idempotente. El objetivo no es mover da
 2. Extraer conteos por `createdBy`, cantidad de imagenes y posibles inconsistencias.
 3. Crear un cielo importado por cada `createdBy`.
 4. Copiar cada estrella al nuevo esquema bajo su cielo importado.
-5. Migrar imagenes desde Cloudinary a Firebase Storage.
+5. Migrar solo las imagenes de Cloudinary realmente referenciadas por Firestore.
 6. Guardar referencias de origen (`legacyDocId`, `legacyUrl`, estado de migracion).
 7. Marcar esos cielos como `unclaimed` hasta que exista una cuenta nueva que deba reclamarlos.
+
+### Politica de migracion de datos
+
+- La coleccion legacy `stars` se mantiene intacta como fuente de verdad y backup operativo.
+- Se crea un cielo importado por cada `createdBy`.
+- Cada estrella importada conserva:
+  - `legacyDocId`
+  - `legacyUrl`
+  - `createdBy`
+  - `createdAt`
+  - `year`
+  - `title`
+  - `message`
+- Las coordenadas se preservan de forma aproximada:
+  - `xNormalized = clamp(x / 100, 0, 1)`
+  - `yNormalized = clamp(y / 100, 0, 1)`
+- La estrella que no tiene imagen tambien se migra, con `imagePath = null`.
 
 ### Reclamacion de contenido legado
 
@@ -417,16 +445,39 @@ Objetivo:
 Plan estructural:
 
 - Las imagenes nuevas se suben solo a Firebase Storage.
-- Las imagenes legacy se copian a Storage.
+- Las imagenes legacy se copian a Storage solo si estan referenciadas por Firestore.
 - Durante la migracion se conserva la URL anterior como referencia.
 - Cuando el sistema nuevo este estable, Cloudinary puede quedar solo como respaldo temporal o eliminarse.
+- El asset huerfano `stars/vnpubgfatrjzrepaccrz` queda catalogado como `excluded_pending_review`.
+
+### Politica de migracion de media
+
+- Solo las URLs presentes en Firestore son candidatas a Storage.
+- Los `samples/**` y los assets root de Cloudinary quedan fuera del import automatico.
+- El mapping minimo a persistir por cada asset migrado sera:
+  - `legacyUrl`
+  - `storagePath`
+  - `downloadURL`
+  - `legacyDocIds`
+
+### Backup y validacion
+
+- Antes de cualquier migracion real se exige backup dual:
+  - Export oficial de Firestore a GCS.
+  - Snapshots locales: `audit-report.json`, `cloudinary-report.json` y `migration-crossref-report.json`.
+- Go / no-go minimo:
+  - conteos esperados confirmados
+  - `26` assets migrables
+  - `1` asset huerfano excluido
+  - `1` estrella sin imagen aceptada
+  - cero estrellas perdidas
+  - cero duplicados creados por corridas repetidas
 
 ## 10. Riesgos y decisiones abiertas
 
 Los siguientes puntos siguen abiertos y deberan refinarse antes de entrar a implementacion completa:
 
-- Confirmar volumen real de estrellas y peso de imagenes a migrar.
-- Confirmar limites, costos y velocidad practica de copiar desde Cloudinary a Storage.
+- Confirmar limites, costos y velocidad practica de copiar `26` assets desde Cloudinary a Storage.
 - Definir si la colaboracion en tiempo real mostrara solo cambios persistidos o tambien presencia visual en vivo.
 - Definir el motor grafico final del editor: evolucion del canvas actual, WebGL propio o una libreria especializada.
 - Definir proveedor de correo para invitaciones y notificaciones.
@@ -447,10 +498,14 @@ Los siguientes puntos siguen abiertos y deberan refinarse antes de entrar a impl
 - Limite de miembros por cielo en MVP: 5.
 - Limite de imagenes por estrella en MVP: 1.
 - Motor grafico MVP: Canvas 2D (SkyEngine actual). WebGL se evaluara post-MVP.
-- Las coordenadas de estrellas legacy no necesitan migrarse exactamente. Solo se migra contenido emocional (titulo, mensaje, imagen, autor, fecha, ano). Las posiciones se asignaran cuando el motor visual este definido.
+- Las coordenadas legacy se preservan de forma aproximada con `xNormalized` y `yNormalized`.
 - La coleccion legacy `stars` se conserva intacta como backup. Solo se elimina despues de validar la migracion.
 - La reclamacion de cielos legacy sera asistida por administracion.
 - El cielo debe verse muy realista (como un telescopio profesional) pero optimizado para movil. Se buscara un equilibrio calidad/rendimiento.
+- Solo se migran las `26` imagenes realmente referenciadas por Firestore.
+- Los assets `samples/**`, los root assets y `stars/vnpubgfatrjzrepaccrz` quedan fuera del import automatico.
+- Las coordenadas legacy se preservan como porcentajes aproximados normalizados a `0..1`.
+- Antes de migrar se exige backup dual: export oficial a GCS + reportes locales.
 
 ## 12. Preguntas abiertas
 
@@ -468,7 +523,9 @@ El roadmap esta organizado en 8 fases con dependencias claras. Cada fase tiene t
 - Exportar respaldo completo de Firestore a GCS.
 - Script de auditoria sobre coleccion legacy `stars` (conteos, campos, coordenadas, fechas).
 - Inventariar imagenes en Cloudinary via API.
-- Documentar costos y limites de Firebase y Cloudinary.
+- Cruce Firestore ↔ Cloudinary con reporte de assets migrables y excluidos.
+- Checklist go / no-go previo a migracion.
+- Documentar costos y limites de Firebase y Cloudinary para `26` assets referenciados.
 - Cerrar decisiones bloqueantes (completado: ver seccion 11).
 
 ### Fase 1 - Scaffolding Next.js + motor visual
@@ -521,7 +578,7 @@ Paralelizable internamente: imagenes (4.A) e invitaciones (4.B) pueden desarroll
 
 ### Fase 5 - Migracion del legado
 
-- Script de migracion de estrellas: agrupar por createdBy, crear cielo por creador, migrar contenido (sin posiciones). Idempotente.
+- Script de migracion de estrellas: agrupar por createdBy, crear cielo por creador, migrar contenido con `xNormalized` y `yNormalized`. Idempotente.
 - Script de migracion de imagenes: Cloudinary -> Firebase Storage. Reanudable.
 - Crear coleccion legacyCreators con mapeo.
 - Script de validacion post-migracion.

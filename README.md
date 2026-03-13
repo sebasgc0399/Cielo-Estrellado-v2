@@ -82,6 +82,7 @@ Notas:
 - `npm run typecheck`: corre TypeScript sin emitir archivos.
 - `npm run audit:firestore`: audita la coleccion legacy `stars` en Firestore.
 - `npm run audit:cloudinary`: inventaria imagenes en Cloudinary.
+- `npm run audit:crossref`: cruza Firestore con Cloudinary y genera el plan de migracion legacy.
 
 ## Auditoria legacy
 
@@ -120,14 +121,39 @@ Salida:
 
 - `scripts/cloudinary-report.json`
 
+### Cruce Firestore - Cloudinary
+
+Prerequisitos:
+
+- `scripts/audit-report.json` vigente.
+- `scripts/cloudinary-report.json` vigente.
+- `FIREBASE_SERVICE_ACCOUNT_PATH` accesible.
+
+Ejecutar:
+
+```bash
+npm run audit:crossref
+```
+
+Salida:
+
+- `scripts/migration-crossref-report.json`
+
+Politica actual cerrada:
+
+- Solo se migran assets referenciados por Firestore.
+- Los assets en `samples/**`, assets root y el huerfano de `stars/` quedan fuera del import automatico.
+- Las coordenadas legacy se preservan de forma aproximada como valores normalizados `0..1`.
+
 ## Documentacion
 
 - Documento maestro: [docs/documento-maestro-cielo-estrellado.md](docs/documento-maestro-cielo-estrellado.md)
+- Checklist de migracion legacy: [docs/legacy-migration-checklist.md](docs/legacy-migration-checklist.md)
 
 ## Siguiente paso recomendado
 
 Antes de entrar a autenticacion y sesiones:
 
-- correr `build`, `lint` y `audit:firestore`
-- completar credenciales de Cloudinary
-- revisar el documento maestro con los resultados reales de la auditoria
+- correr `build`, `lint`, `typecheck` y las tres auditorias
+- registrar el backup oficial de Firestore en GCS
+- revisar el checklist de migracion legacy
