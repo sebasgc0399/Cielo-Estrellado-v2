@@ -6,7 +6,8 @@
       "Bash(rm -f src/components/SkyCanvas.tsx src/components/SkyCanvas.css src/components/DemoControls.tsx src/components/DemoControls.css)",
       "Bash(rm -rf node_modules package-lock.json)",
       "Bash(npm install:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(grep -v \".css$\")"
     ]
   }
 }
