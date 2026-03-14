@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "audit:firestore": "tsx scripts/audit-firestore.ts",
     "audit:cloudinary": "tsx scripts/audit-cloudinary.ts",
-    "audit:crossref": "tsx scripts/audit-crossref.ts"
+    "audit:crossref": "tsx scripts/audit-crossref.ts",
+    "migrate:images": "tsx scripts/migrate-legacy-images.ts",
+    "migrate:stars": "tsx scripts/migrate-legacy-stars.ts",
+    "validate:migration": "tsx scripts/validate-legacy-migration.ts"
   },
   "dependencies": {
     "firebase-admin": "^13.7.0",

@@ -10,7 +10,9 @@
  *   - referenced: Cloudinary assets truly referenced by Firestore
  *   - orphaned_in_stars: assets in `stars/` not referenced by Firestore
  *   - non_migration_assets: Cloudinary assets outside the migration scope
- *   - importPlan: normalized star payload preview for the migration scripts
+ *   - importPlan: normalized star payload preview for future migration scripts
+ *
+ * This script does not write to the new schema. It is a preparation and validation step.
  */
 
 import './load-env'
@@ -20,6 +22,12 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  DEFAULT_SKY_PERSONALIZATION,
+  SHARED_LEGACY_IMPORT_BATCH,
+  SHARED_LEGACY_IMPORT_CONFIG,
+  SHARED_LEGACY_SKY_ID,
+} from '../src/domain/shared-legacy'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -30,9 +38,6 @@ const SERVICE_ACCOUNT_PATH = resolve(
   process.cwd(),
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './scripts/serviceAccountKey.json',
 )
-const IMPORT_BATCH = 'shared-legacy-v1'
-const IMPORTED_SKY_ID = 'shared-legacy-v1'
-
 type LegacyStar = {
   createdAt?: unknown
   createdBy?: string
@@ -94,20 +99,14 @@ type ImportedSkyPlan = {
   skyId: string
   title: string
   source: 'legacy_import'
-  importBatch: typeof IMPORT_BATCH
+  importBatch: typeof SHARED_LEGACY_IMPORT_BATCH
   claimStatus: 'unclaimed'
   ownerUserId: null
-  claimedByUserIds: []
+  claimedByUserIds: string[]
   legacyCreatorKeys: string[]
   defaultMemberRoleAfterFirstApprovedClaim: 'legacy_claimant'
-  memberRolesAfterFullClaimResolution: ['owner', 'editor']
-  personalization: {
-    theme: 'classic'
-    density: 'medium'
-    nebulaEnabled: true
-    twinkleEnabled: true
-    shootingStarsEnabled: true
-  }
+  memberRolesAfterFullClaimResolution: readonly ['owner', 'editor']
+  personalization: typeof DEFAULT_SKY_PERSONALIZATION
   starCount: number
 }
 
@@ -127,8 +126,8 @@ type CrossrefReport = {
     cloudinaryScope: 'only_firestorereferenced_assets'
     coordinateStrategy: 'normalize_percent_scale_to_unit_range'
     legacyImportMode: 'manual_single_shared_legacy'
-    importedSkyId: typeof IMPORTED_SKY_ID
-    importBatch: typeof IMPORT_BATCH
+    importedSkyId: typeof SHARED_LEGACY_SKY_ID
+    importBatch: typeof SHARED_LEGACY_IMPORT_BATCH
     importedSkyInitialClaimStatus: 'unclaimed'
     ownershipAssignmentOnImport: 'none'
     firestoreBackupRequirement: 'export_to_gcs_before_any_write'
@@ -303,23 +302,17 @@ async function main() {
 
   const legacyCreatorKeys = Object.keys(creators).sort()
   const importedSky: ImportedSkyPlan = {
-    skyId: IMPORTED_SKY_ID,
-    title: 'Cielo legacy importado',
-    source: 'legacy_import',
-    importBatch: IMPORT_BATCH,
-    claimStatus: 'unclaimed',
+    skyId: SHARED_LEGACY_IMPORT_CONFIG.skyId,
+    title: SHARED_LEGACY_IMPORT_CONFIG.title,
+    source: SHARED_LEGACY_IMPORT_CONFIG.source,
+    importBatch: SHARED_LEGACY_IMPORT_CONFIG.importBatch,
+    claimStatus: SHARED_LEGACY_IMPORT_CONFIG.initialClaimStatus,
     ownerUserId: null,
     claimedByUserIds: [],
     legacyCreatorKeys,
-    defaultMemberRoleAfterFirstApprovedClaim: 'legacy_claimant',
-    memberRolesAfterFullClaimResolution: ['owner', 'editor'],
-    personalization: {
-      theme: 'classic',
-      density: 'medium',
-      nebulaEnabled: true,
-      twinkleEnabled: true,
-      shootingStarsEnabled: true,
-    },
+    defaultMemberRoleAfterFirstApprovedClaim: SHARED_LEGACY_IMPORT_CONFIG.defaultMemberRoleAfterFirstApprovedClaim,
+    memberRolesAfterFullClaimResolution: SHARED_LEGACY_IMPORT_CONFIG.memberRolesAfterFullClaimResolution,
+    personalization: SHARED_LEGACY_IMPORT_CONFIG.defaultPersonalization,
     starCount: legacyStars.length,
   }
 
@@ -339,10 +332,10 @@ async function main() {
       cloudinaryScope: 'only_firestorereferenced_assets',
       coordinateStrategy: 'normalize_percent_scale_to_unit_range',
       legacyImportMode: 'manual_single_shared_legacy',
-      importedSkyId: IMPORTED_SKY_ID,
-      importBatch: IMPORT_BATCH,
-      importedSkyInitialClaimStatus: 'unclaimed',
-      ownershipAssignmentOnImport: 'none',
+      importedSkyId: SHARED_LEGACY_IMPORT_CONFIG.skyId,
+      importBatch: SHARED_LEGACY_IMPORT_CONFIG.importBatch,
+      importedSkyInitialClaimStatus: SHARED_LEGACY_IMPORT_CONFIG.initialClaimStatus,
+      ownershipAssignmentOnImport: SHARED_LEGACY_IMPORT_CONFIG.ownershipAssignmentOnImport,
       firestoreBackupRequirement: 'export_to_gcs_before_any_write',
       localSnapshotsRequired: ['scripts/audit-report.json', 'scripts/cloudinary-report.json', 'scripts/migration-crossref-report.json'],
       orphanedAssetPolicy: 'excluded_pending_review',

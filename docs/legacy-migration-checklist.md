@@ -25,6 +25,7 @@ Checklist operativo para cerrar Fase 0 antes de ejecutar cualquier migracion rea
 - Importar este dataset en un unico cielo manual `shared-legacy-v1`.
 - Persistir los identificadores brutos observados como `legacyCreatorKeys`, no como una interpretacion de participantes.
 - El cielo importado nace con `claimStatus = unclaimed` y sin `owner` asignado.
+- `npm run audit:crossref` solo genera el preview del import bajo `shared-legacy-v1`; no escribe en Firestore ni en Storage.
 - Tratar `scripts/audit-report.json` y `scripts/migration-crossref-report.json` como archivos locales sensibles.
 
 ## Backups requeridos antes de migrar
@@ -34,6 +35,20 @@ Checklist operativo para cerrar Fase 0 antes de ejecutar cualquier migracion rea
 - [ ] `scripts/audit-report.json` vigente.
 - [ ] `scripts/cloudinary-report.json` vigente.
 - [ ] `scripts/migration-crossref-report.json` vigente.
+
+## Tooling admin-only (secuencia operativa)
+
+1. `npm run migrate:images -- --dry-run`
+2. `npm run migrate:images -- --execute --backup-uri=gs://...`
+3. `npm run migrate:stars -- --dry-run`
+4. `npm run migrate:stars -- --execute --backup-uri=gs://...`
+5. `npm run validate:migration`
+
+Reportes locales esperados (gitignored):
+
+- `scripts/migration-images-report.json`
+- `scripts/migration-stars-report.json`
+- `scripts/migration-validation-report.json`
 
 ## Checklist go / no-go
 
@@ -48,7 +63,7 @@ Checklist operativo para cerrar Fase 0 antes de ejecutar cualquier migracion rea
 
 ## Cola de implementacion
 
-1. Script de cruce Firestore -> Cloudinary -> reporte.
+1. Mantener y validar el preview de cruce Firestore -> Cloudinary -> reporte.
 2. Script de migracion de imagenes referenciadas a Firebase Storage.
 3. Script de migracion de estrellas a nuevo esquema bajo `shared-legacy-v1`, con `xNormalized`, `yNormalized` y `legacyCreatorKey`.
 4. Script de validacion post-migracion con diff de conteos y media.
@@ -62,4 +77,9 @@ npm run typecheck
 npm run audit:firestore
 npm run audit:cloudinary
 npm run audit:crossref
+npm run migrate:images -- --dry-run
+npm run migrate:images -- --execute --backup-uri=gs://...
+npm run migrate:stars -- --dry-run
+npm run migrate:stars -- --execute --backup-uri=gs://...
+npm run validate:migration
 ```

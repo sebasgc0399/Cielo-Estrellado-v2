@@ -58,6 +58,7 @@ Variables actuales:
 - `APP_URL`
 - `SESSION_COOKIE_NAME`
 - `FIREBASE_SERVICE_ACCOUNT_PATH`
+- `FIREBASE_STORAGE_BUCKET`
 - `CLOUDINARY_CLOUD_NAME`
 - `CLOUDINARY_API_KEY`
 - `CLOUDINARY_API_SECRET`
@@ -71,6 +72,7 @@ Variables actuales:
 Notas:
 
 - `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y no debe versionarse.
+- `FIREBASE_STORAGE_BUCKET` es script-only para tooling admin (`migrate:*`, `validate:migration`) y no debe acoplarse a `NEXT_PUBLIC_*`.
 - Las variables `NEXT_PUBLIC_*` se dejan preparadas para Fase 2; hoy la app aun no las consume.
 - Cloudinary solo es necesario para `audit:cloudinary`.
 - Los reportes de auditoria legacy pueden contener contenido real del sistema anterior y deben tratarse como archivos locales sensibles.
@@ -83,7 +85,10 @@ Notas:
 - `npm run typecheck`: corre TypeScript sin emitir archivos.
 - `npm run audit:firestore`: audita la coleccion legacy `stars` en Firestore.
 - `npm run audit:cloudinary`: inventaria imagenes en Cloudinary.
-- `npm run audit:crossref`: cruza Firestore con Cloudinary y genera el plan de migracion legacy.
+- `npm run audit:crossref`: cruza Firestore con Cloudinary y genera un preview del plan de migracion legacy.
+- `npm run migrate:images`: migra media legacy referenciada a Firebase Storage (dry-run por defecto).
+- `npm run migrate:stars`: migra estrellas legacy al esquema `skies/shared-legacy-v1/stars` (dry-run por defecto).
+- `npm run validate:migration`: valida Firestore + Storage post-migracion contra reportes.
 
 ## Auditoria legacy
 
@@ -140,13 +145,52 @@ Salida:
 
 - `scripts/migration-crossref-report.json`
 
+Nota:
+
+- `npm run audit:crossref` no ejecuta la migracion real ni escribe en Firestore o Storage; solo prepara y valida el preview del import.
+
+## Tooling de migracion legacy (admin-only)
+
+Precondiciones operativas antes de cualquier `--execute`:
+
+- Export oficial de Firestore a GCS completado y registrado fuera del repo.
+- `npm run audit:firestore`, `npm run audit:cloudinary` y `npm run audit:crossref` vigentes.
+- Baseline del crossref en verde: `27/26/1/1/0` (`stars/referencedAssets/starsWithoutImage/orphaned/missingInCloudinary`).
+- `FIREBASE_SERVICE_ACCOUNT_PATH` y `FIREBASE_STORAGE_BUCKET` apuntando al mismo entorno/proyecto.
+
+Comandos:
+
+```bash
+npm run migrate:images -- --dry-run
+npm run migrate:images -- --execute --backup-uri=gs://...
+
+npm run migrate:stars -- --dry-run
+npm run migrate:stars -- --execute --backup-uri=gs://...
+
+npm run validate:migration
+```
+
+Salidas locales (gitignored):
+
+- `scripts/migration-images-report.json`
+- `scripts/migration-stars-report.json`
+- `scripts/migration-validation-report.json`
+
+Gates importantes:
+
+- `migrate:*` requiere `--backup-uri=gs://...` en modo `--execute`.
+- `migrate:stars` exige `migration-images-report.json` sin `failed`.
+- `validate:migration` retorna codigo no-cero ante faltantes, extras, duplicados o mismatch de contrato.
+
 Politica actual cerrada:
 
 - Solo se migran assets referenciados por Firestore.
 - Los assets en `samples/**`, assets root y el huerfano de `stars/` quedan fuera del import automatico.
 - Las coordenadas legacy se preservan de forma aproximada como valores normalizados `0..1`.
 - Para este dataset, la importacion se resuelve de forma manual como un unico cielo `shared-legacy-v1`; no se infiere automaticamente por `createdBy`.
+- No existe deteccion automatica de identidad legacy por email, nombre ni heuristicas; cualquier usuario con email verificado y sin claim activo ve el CTA `Solicitar revision de cielo legacy`.
 - El claim legacy requiere email verificado, revision administrativa y el primer claim aprobado solo habilita acceso limitado como `legacy_claimant`.
+- Solo puede existir un claim activo por combinacion `(skyId, legacyCreatorKey, claimantUserId)`.
 
 ## Documentacion
 
@@ -155,8 +199,10 @@ Politica actual cerrada:
 
 ## Siguiente paso recomendado
 
-Antes de entrar a autenticacion y sesiones:
+Secuencia operativa alineada con el roadmap:
 
-- correr `build`, `lint`, `typecheck` y las tres auditorias
 - registrar el backup oficial de Firestore en GCS
-- revisar el checklist de migracion legacy
+- mantener `build`, `lint`, `typecheck` y las tres auditorias en verde
+- preparar y validar el tooling de migracion (`audit:crossref`, import script, validation script)
+- implementar auth/sesion, modelo minimo y runtime de media
+- ejecutar la migracion real solo cuando se cumplan las dependencias del roadmap maestro

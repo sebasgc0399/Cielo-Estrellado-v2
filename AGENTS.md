@@ -23,9 +23,10 @@ Legacy status:
 Operational priority right now:
 
 1. Official Firestore backup to GCS
-2. Referenced image migration script: Cloudinary -> Firebase Storage
-3. Legacy star import script to the new schema
-4. Post-migration validation script
+2. Prepare and validate migration tooling (`audit:crossref`, image import script, star import script, validation script)
+3. Implement auth/session plus the minimum runtime data model
+4. Implement storage/runtime support required for media
+5. Execute the real migration only when the roadmap dependencies are satisfied
 
 ## 2. Commands
 
@@ -52,7 +53,9 @@ npm run audit:crossref     # -> scripts/migration-crossref-report.json
 - `src/app/`: Next.js App Router. Home redirects to `/demo`.
 - `src/app/demo/`: demo route and loader for the visual baseline.
 - `src/components/sky/`: React UI layer around the sky renderer.
-- `src/domain/`: shared product and data contracts agreed before runtime features land.
+- `src/domain/contracts.ts`: persisted domain shapes for users, skies, stars, members, invites, and legacy claims.
+- `src/domain/shared-legacy.ts`: source of truth for `shared-legacy-v1` defaults and import config.
+- `src/domain/policies.ts`: source of truth for session and anti-abuse policy defaults.
 - `src/engine/SkyEngine.ts`: Canvas 2D visual engine and animation loop.
 - `scripts/`: audit scripts and JSON reports for legacy inspection.
 - `docs/`: master document and migration checklist.
@@ -143,20 +146,22 @@ Si la respuesta es "no" a las 3, no proponerlo.
 - Treat the legacy checklist as an operational gate, not as optional documentation.
 - Never write to the legacy collection as part of exploratory work.
 - Migration scripts must be idempotent, traceable, and safe to re-run.
+- `npm run audit:crossref` is a preview/preparation step; it does not execute the real migration.
 - Do not reintroduce import-by-`createdBy` as the active migration rule for the current dataset.
 - If changing migration behavior, update the master document and checklist in the same turn when appropriate.
+- Keep `src/domain/contracts.ts`, `src/domain/shared-legacy.ts`, and `src/domain/policies.ts` aligned; they are the source of truth for persisted shapes, shared legacy defaults, and policy defaults.
 - Prefer repository-consistent solutions: Next.js App Router, focused modules, plain CSS, minimal abstractions.
 
 ## 8. Current Phase and Priorities
 
-The repository has a working visual scaffold, but the next practical priority is not auth yet.
+The repository has a working visual scaffold. Tooling preparation can happen before auth runtime, but the real migration still depends on the roadmap sequence in the master document.
 
 Current sequence should be:
 
 1. Complete and record the official Firestore backup to GCS
-2. Implement the script that copies the 26 referenced images to Firebase Storage
-3. Implement the star import script to the new schema
-4. Implement post-migration validation
-5. Continue with auth, sessions, skies, permissions, and collaboration flows
+2. Prepare and validate migration tooling (`audit:crossref`, image import script, star import script, validation script)
+3. Implement auth, sessions, and the minimum runtime data model
+4. Implement the storage/runtime support required for media
+5. Execute the real migration only when the roadmap dependencies are satisfied
 
 For full product, data, and roadmap context, use `docs/documento-maestro-cielo-estrellado.md` as the main decision document.

@@ -1,9 +1,15 @@
-// Shared product and data contracts agreed before runtime implementation.
+// Normalized persisted domain records for runtime and migration work.
+
+export type IsoDateString = string
 
 export type SkySource = 'native' | 'legacy_import'
 export type SkyClaimStatus = 'unclaimed' | 'partially_claimed' | 'claimed' | 'disputed'
+export type SkyPrivacy = 'private'
 export type MemberRole = 'owner' | 'editor' | 'viewer' | 'legacy_claimant'
 export type MemberStatus = 'active' | 'revoked' | 'pending'
+export type UserStatus = 'active' | 'pending' | 'disabled'
+export type InviteRole = 'editor' | 'viewer'
+export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
 export type SkyTheme = 'classic' | 'romantic' | 'deep-night'
 export type SkyDensity = 'low' | 'medium' | 'high'
 export type ClaimReviewStatus =
@@ -22,17 +28,32 @@ export interface SkyPersonalization {
   shootingStarsEnabled: boolean
 }
 
+export interface UserRecord {
+  displayName: string | null
+  email: string
+  photoURL: string | null
+  providers: string[]
+  emailVerifiedAt: IsoDateString | null
+  createdAt: IsoDateString
+  lastLoginAt: IsoDateString | null
+  status: UserStatus
+  sessionVersion: number
+}
+
 export interface SkyRecord {
   title: string
   description: string | null
   ownerUserId: string | null
-  privacy: 'private'
+  privacy: SkyPrivacy
+  coverImagePath: string | null
   source: SkySource
   importBatch: string | null
   legacyCreatorKeys: string[]
   claimStatus: SkyClaimStatus
   claimedByUserIds: string[]
   personalization: SkyPersonalization
+  createdAt: IsoDateString
+  updatedAt: IsoDateString
 }
 
 export interface StarRecord {
@@ -47,6 +68,10 @@ export interface StarRecord {
   updatedByUserId: string | null
   legacyCreatorKey: string | null
   legacyDocId: string | null
+  createdAt: IsoDateString
+  updatedAt: IsoDateString
+  deletedAt: IsoDateString | null
+  deletedByUserId: string | null
 }
 
 export interface MemberRecord {
@@ -55,29 +80,31 @@ export interface MemberRecord {
   status: MemberStatus
   invitedByUserId: string | null
   claimedLegacyCreatorKey: string | null
+  joinedAt: IsoDateString
+}
+
+export interface InviteRecord {
+  skyId: string
+  role: InviteRole
+  tokenHash: string
+  createdByUserId: string
+  expiresAt: IsoDateString
+  status: InviteStatus
+  acceptedByUserId: string | null
+  acceptedAt: IsoDateString | null
 }
 
 export interface LegacyClaimRecord {
+  claimKey: string
   skyId: string
   claimantUserId: string
   legacyCreatorKey: string
   status: ClaimReviewStatus
   evidenceSummary: string
   decisionReason: string | null
+  attemptCount: number
+  lastSubmittedAt: IsoDateString
+  submittedAt: IsoDateString
+  reviewedAt: IsoDateString | null
   reviewedByUserId: string | null
 }
-
-export const SHARED_LEGACY_IMPORT_BATCH = 'shared-legacy-v1' as const
-export const SHARED_LEGACY_SKY_ID = 'shared-legacy-v1' as const
-
-export const DEFAULT_SKY_PERSONALIZATION: SkyPersonalization = {
-  theme: 'classic',
-  density: 'medium',
-  nebulaEnabled: true,
-  twinkleEnabled: true,
-  shootingStarsEnabled: true,
-}
-
-export const SESSION_COOKIE_TTL_MS = 5 * 24 * 60 * 60 * 1000
-export const SESSION_RENEWAL_WINDOW_MS = 24 * 60 * 60 * 1000
-export const SESSION_COOKIE_SAME_SITE = 'lax' as const

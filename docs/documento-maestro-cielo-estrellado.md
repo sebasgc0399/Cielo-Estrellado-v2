@@ -163,7 +163,8 @@ La primera version funcional seria del producto debe enfocarse en el caso de uso
 
 - Existe un solo entrypoint despues de login.
 - Si el usuario no tiene legado ni invitacion, el CTA principal es crear su primer cielo.
-- Si el usuario tiene un cielo legacy pendiente, el dashboard muestra `Reclamar cielo legacy`.
+- No existe deteccion automatica de identidad legacy por email, nombre ni heuristicas.
+- Cualquier usuario con email verificado, sin un claim activo sobre `shared-legacy-v1`, ve el CTA secundario `Solicitar revision de cielo legacy`.
 - Si el usuario entra con invitacion, acepta la invitacion primero.
 - Si el usuario tiene legado y ademas una invitacion activa, acepta la invitacion primero y luego ve un banner persistente para iniciar el claim legacy.
 
@@ -283,7 +284,7 @@ Politica operativa del MVP:
 
 - Cookies HTTP-only para evitar exposicion directa desde JavaScript.
 - Politica `Secure` en produccion.
-- Politica `SameSite` acorde al flujo final elegido.
+- Politica `SameSite=Lax` en MVP.
 - Middleware para redireccion o bloqueo de usuarios no autenticados.
 - Verificacion de rol para operaciones sobre cielos compartidos.
 - Reglas de Firestore y Storage alineadas con el modelo de permisos.
@@ -293,13 +294,22 @@ Politica operativa del MVP:
 - El rol de membresia y la autoria de estrella se modelan por separado.
 - La autoria de estrella protege el contenido frente a otros editores, pero no reemplaza la autoridad final del `owner`.
 - El estado transitorio `legacy_claimant` solo existe mientras un cielo legacy este en `partially_claimed`.
+- Todo borrado destructivo en MVP se implementa como `soft delete`.
+- Durante claim parcial, la comprobacion de autoria sobre estrellas legacy se resuelve con `member.claimedLegacyCreatorKey === star.legacyCreatorKey`.
+- Cuando un claim aprobado queda asociado a un `legacyCreatorKey`, esas estrellas pasan a resolverse como autoria logica de ese usuario para permisos de edicion.
 
-### Roles iniciales
+### Matriz operativa de permisos
 
-- `owner`: administra miembros, invitaciones, personalizacion global y cualquier estrella.
-- `editor`: crea estrellas nuevas y edita solo sus propias estrellas; no borra estrellas ajenas ni cambia la personalizacion global.
-- `viewer`: puede ver pero no editar.
-- `legacy_claimant`: puede ver todo, reclamar, crear estrellas nuevas y editar solo estrellas legacy cuyo `legacyCreatorKey` coincide con su identidad reclamada; no puede borrar estrellas legacy ajenas, no puede gestionar miembros y no puede cambiar la personalizacion global.
+| Accion | `owner` | `editor` | `viewer` | `legacy_claimant` |
+| --- | --- | --- | --- | --- |
+| Ver cielo y estrellas | Si | Si | Si | Si |
+| Crear estrella nueva | Si | Si | No | Si |
+| Editar, mover o reemplazar imagen de estrella nueva propia | Si | Si | No | Si |
+| Soft delete de estrella nueva propia | Si | Si | No | Si |
+| Editar, mover o reemplazar imagen de estrella legacy con `legacyCreatorKey` coincidente | Si | Si, solo como autor logico o `authorUserId` | No | Si, solo si `claimedLegacyCreatorKey === legacyCreatorKey` |
+| Soft delete de estrella legacy | Si | No | No | No |
+| Cambiar metadata del cielo o personalizacion global | Si | No | No | No |
+| Gestionar miembros e invitaciones | Si | No | No | No |
 
 ### Capas adicionales recomendadas
 
@@ -343,7 +353,7 @@ Campos orientativos:
 - `description`
 - `ownerUserId`
 - `privacy`
-- `coverImage`
+- `coverImagePath`
 - `source`
 - `importBatch`
 - `legacyCreatorKeys`
@@ -372,6 +382,8 @@ Campos orientativos:
 - `updatedByUserId`
 - `createdAt`
 - `updatedAt`
+- `deletedAt`
+- `deletedByUserId`
 - `legacyCreatorKey`
 - `legacyDocId`
 
@@ -385,7 +397,7 @@ Campos orientativos:
 
 - `userId`
 - `role`
-- `invitedBy`
+- `invitedByUserId`
 - `joinedAt`
 - `status`
 - `claimedLegacyCreatorKey`
@@ -401,10 +413,11 @@ Campos orientativos:
 - `skyId`
 - `role`
 - `tokenHash`
-- `createdBy`
+- `createdByUserId`
 - `expiresAt`
 - `status`
-- `acceptedBy`
+- `acceptedByUserId`
+- `acceptedAt`
 
 #### `legacyClaims`
 
@@ -414,13 +427,16 @@ Proposito:
 
 Campos orientativos:
 
+- `claimKey`
 - `skyId`
 - `claimantUserId`
 - `legacyCreatorKey`
 - `status`
 - `evidenceSummary`
 - `decisionReason`
-- `reviewedBy`
+- `attemptCount`
+- `lastSubmittedAt`
+- `reviewedByUserId`
 - `submittedAt`
 - `reviewedAt`
 
@@ -485,8 +501,13 @@ Decision operativa cerrada:
 
 - El claim ocurre despues de login y email verificado.
 - El usuario reclama un `legacyCreatorKey` concreto.
+- No existe matching automatico por email, nombre ni heuristicas; el usuario inicia el claim desde un CTA generico para cuentas verificadas elegibles.
 - La evidencia es aportada por el usuario y solo se guarda `evidenceSummary`.
 - No se almacenan respuestas crudas ni se reexpone contenido intimo del legado en quizzes.
+- Cada intento usa un `claimKey` deterministico derivado de `(skyId, legacyCreatorKey, claimantUserId)`.
+- Solo puede existir un claim activo por combinacion `(skyId, legacyCreatorKey, claimantUserId)`.
+- No se permiten reenvios mientras el claim este en `submitted` o `approved_partial`.
+- Si el claim termina en `rejected`, `revoked` o `disputed`, solo administracion puede reabrirlo o habilitar un nuevo intento.
 - El primer claim aprobado mueve el cielo a `partially_claimed` y otorga acceso limitado como `legacy_claimant`.
 - Solo cuando el claim se resuelve por completo se activan roles normales (`owner` y `editor`).
 - Si hay inconsistencia o disputa, el cielo pasa a `disputed`.
@@ -520,12 +541,18 @@ Plan estructural:
   - `storagePath`
   - `downloadURL`
   - `legacyDocIds`
+- El tooling admin-only usa:
+  - `npm run migrate:images` (dry-run por defecto)
+  - `npm run migrate:stars` (dry-run por defecto)
+  - `npm run validate:migration` (post-migracion)
+- Cualquier corrida con escritura real exige `--execute --backup-uri=gs://...`.
 
 ### Backup y validacion
 
 - Antes de cualquier migracion real se exige backup dual:
   - Export oficial de Firestore a GCS.
   - Snapshots locales: `audit-report.json`, `cloudinary-report.json` y `migration-crossref-report.json`.
+- Validacion operativa post-migracion: `scripts/migration-images-report.json`, `scripts/migration-stars-report.json` y `scripts/migration-validation-report.json`.
 - Go / no-go minimo:
   - conteos esperados confirmados
   - `26` assets migrables
@@ -590,7 +617,7 @@ El roadmap esta organizado en 8 fases con dependencias claras. Cada fase tiene t
 - Exportar respaldo completo de Firestore a GCS.
 - Script de auditoria sobre coleccion legacy `stars` (conteos, campos, coordenadas, fechas).
 - Inventariar imagenes en Cloudinary via API.
-- Cruce Firestore ↔ Cloudinary con reporte de assets migrables y excluidos.
+- Cruce Firestore -> Cloudinary con preview de assets migrables y excluidos.
 - Checklist go / no-go previo a migracion.
 - Documentar costos y limites de Firebase y Cloudinary para `26` assets referenciados.
 - Cerrar decisiones bloqueantes (completado: ver seccion 11).
