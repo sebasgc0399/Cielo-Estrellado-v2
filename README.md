@@ -29,11 +29,13 @@ Base actual del proyecto para el relanzamiento de Cielo Estrellado. El repositor
   - Auth client en navegador
   - Firebase Admin en rutas server
   - lectura server-side de `users/{uid}` en `/app/perfil`
+  - lectura server-side de cielos del usuario en `/app`
+  - creacion de cielos privados y membresia owner en Firestore via `/api/skies`
 
 Todavia no estan implementados en runtime:
 
-- CRUD runtime de `skies`, `stars`, `members`, `invites` y `legacyClaims`
-- Creacion y listado real de cielos en `/app`
+- CRUD completo de `skies`, `stars`, `members`, `invites` y `legacyClaims`
+- Ruta detalle de cielo y editor runtime
 - Editor runtime de cielos
 - Flujo runtime de claim legacy
 - Flujo runtime de invitaciones
@@ -109,6 +111,7 @@ Notas:
 - `FIREBASE_STORAGE_BUCKET` es script-only para tooling admin (`migrate:*`, `validate:migration`) y no debe acoplarse a `NEXT_PUBLIC_*`.
 - Las variables `NEXT_PUBLIC_*` ya se consumen en runtime para Firebase Auth.
 - `SESSION_COOKIE_NAME` ya se consume en runtime para la cookie de sesion HTTP-only.
+- `firestore.indexes.json` versiona el indice compuesto necesario para cargar cielos del usuario con `collectionGroup('members')`; debes aplicarlo en el proyecto Firebase antes de usar `/app` en un entorno nuevo.
 - Cloudinary solo es necesario para `audit:cloudinary` y migracion legacy.
 - Los reportes de auditoria y migracion legacy pueden contener contenido real o metadata sensible del sistema anterior y deben tratarse como archivos locales sensibles.
 
@@ -247,8 +250,8 @@ Politica actual cerrada:
 
 Siguiente frente de trabajo sobre la base ya migrada y autenticada:
 
-- implementar el modelo runtime minimo de `skies` y `members`
-- activar creacion y listado real de cielos en `/app`
+- expandir el runtime de `skies` con ruta detalle y comportamiento de editor
 - integrar soporte runtime de media con Firestore y Firebase Storage
 - construir onboarding, claim legacy e invitaciones sobre la base ya autenticada
+- expandir el runtime de `stars` y permisos sobre cielos reales
 - conservar el tooling de migracion solo para validacion operativa o re-ejecuciones justificadas
