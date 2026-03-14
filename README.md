@@ -7,21 +7,38 @@ Base actual del proyecto para el relanzamiento de Cielo Estrellado. El repositor
 ### Runtime actual
 
 - Migracion visual a Next.js completada.
-- Ruta de referencia: `/demo`.
+- Rutas publicas actuales:
+  - `/` redirige a `/demo`
+  - `/demo` como baseline visual
+  - `/login` para autenticacion
 - `SkyEngine.ts` se conserva sin cambios funcionales.
 - Hardening base aplicado:
   - ESLint CLI no interactivo.
   - Scripts de auditoria y migracion legacy.
   - Contrato de entorno con `.env.example` y `.env.local`.
+- Auth runtime base ya implementada:
+  - Firebase Auth client con email/password y Google
+  - cookies HTTP-only via `/api/auth/session` y `/api/auth/logout`
+  - `middleware.ts` para proteger rutas privadas
+  - sincronizacion de `users/{uid}` en Firestore al iniciar sesion
+- Shell autenticado minimo ya implementado:
+  - `/app`
+  - `/app/perfil`
+  - `/app/legacy`
+- Integracion runtime minima con Firebase ya implementada:
+  - Auth client en navegador
+  - Firebase Admin en rutas server
+  - lectura server-side de `users/{uid}` en `/app/perfil`
 
 Todavia no estan implementados en runtime:
 
-- Autenticacion
-- Sesiones seguras con cookies HTTP-only
-- Dashboard de cielos
-- CRUD runtime de `skies`, `members` y `invites`
+- CRUD runtime de `skies`, `stars`, `members`, `invites` y `legacyClaims`
+- Creacion y listado real de cielos en `/app`
+- Editor runtime de cielos
 - Flujo runtime de claim legacy
-- Integracion runtime visible con Firestore y Firebase Storage
+- Flujo runtime de invitaciones
+- Integracion runtime de media con Firebase Storage
+- Reenvio de verificacion de email y onboarding completo post-login
 
 ### Estado legacy verificado en el entorno actual (`masmelito-f209c`)
 
@@ -58,6 +75,8 @@ npm run dev
 
 4. Abre `http://localhost:3000/demo`.
 
+Tambien puedes abrir `http://localhost:3000/login` para probar auth y el shell privado en `/app`.
+
 ## Variables de entorno
 
 Archivo versionado:
@@ -86,9 +105,10 @@ Variables actuales:
 
 Notas:
 
-- `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y no debe versionarse.
+- `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y no debe versionarse; hoy lo usan scripts legacy y runtime server para auth/sesion.
 - `FIREBASE_STORAGE_BUCKET` es script-only para tooling admin (`migrate:*`, `validate:migration`) y no debe acoplarse a `NEXT_PUBLIC_*`.
-- Las variables `NEXT_PUBLIC_*` se dejan preparadas para Fase 2; hoy la app aun no las consume.
+- Las variables `NEXT_PUBLIC_*` ya se consumen en runtime para Firebase Auth.
+- `SESSION_COOKIE_NAME` ya se consume en runtime para la cookie de sesion HTTP-only.
 - Cloudinary solo es necesario para `audit:cloudinary` y migracion legacy.
 - Los reportes de auditoria y migracion legacy pueden contener contenido real o metadata sensible del sistema anterior y deben tratarse como archivos locales sensibles.
 
@@ -96,6 +116,7 @@ Notas:
 
 - `npm run dev`: levanta Next.js en local.
 - `npm run build`: compila produccion y valida tipos.
+- `npm run start`: levanta la build de produccion local.
 - `npm run lint`: ejecuta ESLint de forma no interactiva.
 - `npm run typecheck`: corre TypeScript sin emitir archivos.
 - `npm run audit:firestore`: audita la coleccion legacy `stars` en Firestore.
@@ -224,10 +245,10 @@ Politica actual cerrada:
 
 ## Siguiente paso recomendado
 
-Siguiente frente de trabajo sobre la base ya migrada:
+Siguiente frente de trabajo sobre la base ya migrada y autenticada:
 
-- implementar auth y sesiones seguras con cookies HTTP-only
-- implementar el modelo runtime minimo de `users`, `skies`, `stars`, `members`, `invites` y `legacyClaims`
-- construir rutas y UI de onboarding, claim legacy e invitaciones
-- integrar consumo runtime de Firestore y Firebase Storage
+- implementar el modelo runtime minimo de `skies` y `members`
+- activar creacion y listado real de cielos en `/app`
+- integrar soporte runtime de media con Firestore y Firebase Storage
+- construir onboarding, claim legacy e invitaciones sobre la base ya autenticada
 - conservar el tooling de migracion solo para validacion operativa o re-ejecuciones justificadas

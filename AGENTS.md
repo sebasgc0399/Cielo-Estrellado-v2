@@ -12,7 +12,13 @@ Current repository state:
 - React 19 and TypeScript are in place.
 - `/demo` is the visual baseline and current working reference.
 - `SkyEngine.ts` is preserved as the current Canvas 2D rendering core.
-- Auth, secure sessions, CRUD for skies, invitations, runtime Firebase integration, and Firebase Storage uploads are not implemented yet.
+- Runtime auth/session is already implemented:
+  - `/login` with email/password and Google sign-in
+  - HTTP-only session cookies via `/api/auth/session` and `/api/auth/logout`
+  - `middleware.ts` protecting `/app/**`
+  - authenticated shell in `/app`, `/app/perfil`, and `/app/legacy`
+- Minimal runtime Firebase integration is already in place for auth and `users/{uid}` profile reads.
+- CRUD for skies, invitations, claim runtime, stars runtime, and Firebase Storage media flows are not implemented yet.
 
 Legacy status:
 
@@ -24,7 +30,7 @@ Legacy status:
 
 Operational priority right now:
 
-1. Implement auth/session plus the minimum runtime data model
+1. Implement the minimum runtime sky data model on top of the existing auth/session base
 2. Implement storage/runtime support required for media
 3. Implement onboarding, claim, and invitation flows on top of the migrated base
 4. Keep migration tooling available for operational validation or justified re-runs
@@ -51,18 +57,23 @@ npm run validate:migration # validates Firestore + Storage against migration rep
 
 ## 3. Architecture
 
-**Stack:** Next.js 15 (App Router), React 19, TypeScript, Firebase Admin SDK for scripts, Firebase client/runtime integration planned for later phases, plain CSS.
+**Stack:** Next.js 15 (App Router), React 19, TypeScript, Firebase client auth, Firebase Admin SDK for scripts and runtime server work, plain CSS.
 
 **Path alias:** `@/*` -> `./src/*`
 
 ### Source layout
 
 - `src/app/`: Next.js App Router. Home redirects to `/demo`.
+- `src/app/login/`: runtime auth entrypoint.
+- `src/app/app/`: authenticated shell and private pages.
+- `src/app/api/auth/`: session creation and logout routes.
 - `src/app/demo/`: demo route and loader for the visual baseline.
 - `src/components/sky/`: React UI layer around the sky renderer.
 - `src/domain/contracts.ts`: persisted domain shapes for users, skies, stars, members, invites, and legacy claims.
 - `src/domain/shared-legacy.ts`: source of truth for `shared-legacy-v1` defaults and import config.
 - `src/domain/policies.ts`: source of truth for session and anti-abuse policy defaults.
+- `src/lib/auth/`: runtime auth/session helpers and client context.
+- `src/lib/firebase/`: Firebase client/admin initialization for runtime.
 - `src/engine/SkyEngine.ts`: Canvas 2D visual engine and animation loop.
 - `scripts/`: audit scripts and JSON reports for legacy inspection.
 - `docs/`: master document and migration checklist.
@@ -75,7 +86,7 @@ The sky renderer is fully client-side. React owns the shell and UI state, while 
 
 - Pure React hooks
 - No external state library
-- No runtime data fetching yet
+- Minimal runtime data fetching exists for auth/session and `users/{uid}` profile reads
 
 ### Important note about deployment assumptions
 
@@ -121,9 +132,10 @@ Si la respuesta es "no" a las 3, no proponerlo.
 - Node.js 20 LTS recomendado
 - `.env.example` define los nombres de variables
 - `.env.local` es local y no debe versionarse
-- `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y nunca debe committearse
+- `FIREBASE_SERVICE_ACCOUNT_PATH` points to a local JSON, must never be committed, and is used by legacy scripts plus runtime server auth/session work
 - `FIREBASE_STORAGE_BUCKET` is script-only for admin migration/validation tooling
-- `NEXT_PUBLIC_FIREBASE_*` ya existe como contrato, pero todavia no se consume en runtime
+- `NEXT_PUBLIC_FIREBASE_*` is already consumed by runtime auth
+- `SESSION_COOKIE_NAME` is already consumed by the HTTP-only session cookie flow
 - Cloudinary solo es necesario para auditoria y migracion legacy
 - Legacy audit/migration reports may include real historical content or sensitive metadata and must remain local-only
 
@@ -165,14 +177,14 @@ Si la respuesta es "no" a las 3, no proponerlo.
 
 ## 8. Current Phase and Priorities
 
-The repository has a working visual scaffold and a validated migrated legacy base in the current Firebase environment. The next front is product/runtime implementation, not more migration preparation.
+The repository has a working visual scaffold, a validated migrated legacy base in the current Firebase environment, and a minimum auth/session runtime. The next front is runtime sky data and product behavior, not more migration preparation.
 
 Current sequence should be:
 
-1. Implement auth, sessions, and the minimum runtime data model
+1. Implement the minimum runtime `skies` + `members` model and activate real sky creation/listing in `/app`
 2. Implement the storage/runtime support required for media
 3. Build onboarding, claim, and invitation runtime flows
-4. Keep migration validation tooling available for operational checks
-5. Re-run real migration only if a concrete operational need appears and backup requirements are met
+4. Expand runtime stars/editor behavior on top of the sky model
+5. Keep migration validation tooling available for operational checks and re-run real migration only if a concrete operational need appears and backup requirements are met
 
 For full product, data, and roadmap context, use `docs/documento-maestro-cielo-estrellado.md` as the main decision document.

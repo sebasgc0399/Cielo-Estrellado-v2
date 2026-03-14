@@ -12,7 +12,8 @@
       "Bash(npx eslint:*)",
       "Bash(npm run:*)",
       "Read(//d/Proyectos/ VS/ CODE/Cielo_Estrellado/cielo-estrellado-v4/src/**)",
-      "Read(//d/Proyectos/ VS/ CODE/Cielo_Estrellado/cielo-estrellado-v4/**)"
+      "Read(//d/Proyectos/ VS/ CODE/Cielo_Estrellado/cielo-estrellado-v4/**)",
+      "Bash(find 'd:/Proyectos VS CODE/Cielo_Estrellado/cielo-estrellado-v4/src/lib' -type f -name *.ts -o -name *.tsx)"
     ]
   },
   "enabledPlugins": {
