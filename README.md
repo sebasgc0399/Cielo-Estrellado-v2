@@ -31,14 +31,15 @@ Base actual del proyecto para el relanzamiento de Cielo Estrellado. El repositor
   - lectura server-side de `users/{uid}` en `/app/perfil`
   - lectura server-side de cielos del usuario en `/app`
   - creacion de cielos privados y membresia owner en Firestore via `/api/skies`
+  - ruta detalle de cielo en `/app/cielos/[skyId]` con validacion server-side de membresia activa
+  - la ruta detalle muestra metadata del cielo (titulo, rol, privacy, source, fecha) y un placeholder honesto para stars
 
 Todavia no estan implementados en runtime:
 
-- CRUD completo de `skies`, `stars`, `members`, `invites` y `legacyClaims`
-- Ruta detalle de cielo y editor runtime
-- Editor runtime de cielos
-- Flujo runtime de claim legacy
+- Stars runtime (lectura, creacion y edicion de estrellas en cielos)
+- Editor runtime del cielo (comportamiento de edicion de metadatos y canvas)
 - Flujo runtime de invitaciones
+- Flujo runtime de claim legacy
 - Integracion runtime de media con Firebase Storage
 - Reenvio de verificacion de email y onboarding completo post-login
 
@@ -248,10 +249,9 @@ Politica actual cerrada:
 
 ## Siguiente paso recomendado
 
-Siguiente frente de trabajo sobre la base ya migrada y autenticada:
+Siguiente frente de trabajo sobre la base ya migrada, autenticada y con detalle de cielo:
 
-- expandir el runtime de `skies` con ruta detalle y comportamiento de editor
-- integrar soporte runtime de media con Firestore y Firebase Storage
-- construir onboarding, claim legacy e invitaciones sobre la base ya autenticada
-- expandir el runtime de `stars` y permisos sobre cielos reales
+- expandir el detalle de cielo con stars runtime (lectura, creacion y edicion de estrellas)
+- integrar soporte runtime de media con Firebase Storage
+- construir claim legacy, invitaciones y onboarding sobre la base ya autenticada
 - conservar el tooling de migracion solo para validacion operativa o re-ejecuciones justificadas

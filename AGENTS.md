@@ -21,7 +21,8 @@ Current repository state:
   - `/app` reads the authenticated user's skies from Firestore
   - `POST /api/skies` creates a private sky plus the owner membership
   - `firestore.indexes.json` versions the required `collectionGroup('members')` index
-- Full CRUD for skies, invitations, claim runtime, stars runtime, and Firebase Storage media flows are not implemented yet.
+  - `/app/cielos/[skyId]` is a protected detail route that validates active membership server-side and shows sky metadata (title, role, privacy, source, date) with an honest placeholder for stars
+- Stars runtime, editor behavior, invitations, claim runtime, and Firebase Storage media flows are not implemented yet.
 
 Legacy status:
 
@@ -33,7 +34,7 @@ Legacy status:
 
 Operational priority right now:
 
-1. Expand the sky runtime with detail route, editor behavior, and stars on top of the existing auth/session + sky base
+1. Expand the sky detail route with stars runtime (read, create, edit stars) on top of the existing detail page
 2. Implement storage/runtime support required for media
 3. Implement onboarding, claim, and invitation flows on top of the migrated base
 4. Keep migration tooling available for operational validation or justified re-runs
@@ -68,7 +69,7 @@ npm run validate:migration # validates Firestore + Storage against migration rep
 
 - `src/app/`: Next.js App Router. Home redirects to `/demo`.
 - `src/app/login/`: runtime auth entrypoint.
-- `src/app/app/`: authenticated shell and private pages.
+- `src/app/app/`: authenticated shell and private pages, including `/app/cielos/[skyId]` for sky detail.
 - `src/app/api/skies/`: minimum runtime sky creation endpoint.
 - `src/app/api/auth/`: session creation and logout routes.
 - `src/app/demo/`: demo route and loader for the visual baseline.
@@ -78,7 +79,7 @@ npm run validate:migration # validates Firestore + Storage against migration rep
 - `src/domain/policies.ts`: source of truth for session and anti-abuse policy defaults.
 - `src/lib/auth/`: runtime auth/session helpers and client context.
 - `src/lib/firebase/`: Firebase client/admin initialization for runtime.
-- `src/lib/skies/`: server-side sky queries for authenticated runtime pages.
+- `src/lib/skies/`: server-side sky queries for authenticated runtime pages (`getUserSkies`, `getSkyWithAccess`).
 - `src/engine/SkyEngine.ts`: Canvas 2D visual engine and animation loop.
 - `scripts/`: audit scripts and JSON reports for legacy inspection.
 - `docs/`: master document and migration checklist.
@@ -92,7 +93,7 @@ The sky renderer is fully client-side. React owns the shell and UI state, while 
 
 - Pure React hooks
 - No external state library
-- Minimal runtime data fetching exists for auth/session, `users/{uid}` profile reads, and authenticated sky list reads
+- Minimal runtime data fetching exists for auth/session, `users/{uid}` profile reads, authenticated sky list reads, and sky detail reads with membership validation
 
 ### Important note about deployment assumptions
 
@@ -184,11 +185,11 @@ Si la respuesta es "no" a las 3, no proponerlo.
 
 ## 8. Current Phase and Priorities
 
-The repository has a working visual scaffold, a validated migrated legacy base in the current Firebase environment, a minimum auth/session runtime, and a first runtime sky creation/listing slice. The next front is expanding sky behavior and product flows, not more migration preparation.
+The repository has a working visual scaffold, a validated migrated legacy base in the current Firebase environment, a minimum auth/session runtime, a sky creation/listing slice, and a sky detail route with membership validation. The next front is adding stars and media to the existing detail route, not more migration preparation.
 
 Current sequence should be:
 
-1. Expand runtime `skies` with detail route, editor behavior, and stars on top of the current creation/listing slice
+1. Expand the sky detail route with stars runtime (read, create, edit stars on top of the existing `/app/cielos/[skyId]`)
 2. Implement the storage/runtime support required for media
 3. Build onboarding, claim, and invitation runtime flows
 4. Keep migration validation tooling available for operational checks and re-run real migration only if a concrete operational need appears and backup requirements are met
