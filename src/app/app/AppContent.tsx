@@ -12,6 +12,35 @@ interface AppContentProps {
   skiesResult: GetUserSkiesResult
 }
 
+function extractConsoleUrl(error: string): string | null {
+  const match = error.match(/https:\/\/[^\s]+/)
+  if (!match) return null
+
+  return match[0].replace(/[),.;]+$/, '')
+}
+
+function getSkyLoadErrorState(error: string): {
+  description: string
+  details: string | null
+  consoleUrl: string | null
+} {
+  const consoleUrl = extractConsoleUrl(error)
+
+  if (consoleUrl) {
+    return {
+      description: 'Este entorno todavia no tiene el indice de Firestore necesario para cargar tus cielos.',
+      details: 'Crea el indice en Firebase Console, espera a que termine de construir y luego vuelve a intentar.',
+      consoleUrl,
+    }
+  }
+
+  return {
+    description: 'Intenta recargar la pagina. Si el problema persiste, revisa tu conexion o la configuracion de Firebase.',
+    details: error || null,
+    consoleUrl: null,
+  }
+}
+
 export function AppContent({ user, skiesResult }: AppContentProps) {
   const router = useRouter()
   const greeting = user.displayName ? `Hola, ${user.displayName}` : 'Hola'
@@ -111,6 +140,8 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
     legacy_claimant: 'Legacy',
   }
 
+  const loadErrorState = !skiesResult.ok ? getSkyLoadErrorState(skiesResult.error) : null
+
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
@@ -131,15 +162,30 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
             <span className={styles.errorIcon} aria-hidden="true">!</span>
             <p className={styles.errorTitle}>No se pudieron cargar tus cielos</p>
             <p className={styles.errorText}>
-              Intenta recargar la página. Si el problema persiste, revisa tu conexión.
+              {loadErrorState?.description}
             </p>
-            <button
-              className={styles.retryBtn}
-              onClick={() => router.refresh()}
-              type="button"
-            >
-              Reintentar
-            </button>
+            {loadErrorState?.details && (
+              <p className={styles.errorHint}>{loadErrorState.details}</p>
+            )}
+            <div className={styles.errorActions}>
+              {loadErrorState?.consoleUrl && (
+                <a
+                  className={styles.consoleLink}
+                  href={loadErrorState.consoleUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Abrir indice en Firebase
+                </a>
+              )}
+              <button
+                className={styles.retryBtn}
+                onClick={() => router.refresh()}
+                type="button"
+              >
+                Reintentar
+              </button>
+            </div>
           </div>
         ) : skiesResult.skies.length === 0 ? (
           <div className={styles.emptyState}>
@@ -164,7 +210,7 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
           <>
             <div className={styles.skyList}>
               {skiesResult.skies.map((entry) => (
-                <div key={entry.skyId} className={styles.skyCard}>
+                <Link key={entry.skyId} href={`/app/cielos/${entry.skyId}`} className={styles.skyCard}>
                   <span className={styles.skyCardTitle}>{entry.sky.title}</span>
                   <div className={styles.skyCardMeta}>
                     <span className={styles.roleBadge}>
@@ -178,7 +224,7 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
                       })}
                     </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             {isCreating ? (
