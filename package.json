@@ -16,10 +16,12 @@
     "validate:migration": "tsx scripts/validate-legacy-migration.ts"
   },
   "dependencies": {
+    "firebase": "^12.10.0",
     "firebase-admin": "^13.7.0",
     "next": "^15.3.4",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

@@ -18,15 +18,17 @@ Legacy status:
 
 - Fase 0 is closed at the audit/specification level.
 - Confirmed legacy audit: 27 stars, 2 creators, 26 referenced images that migrate, 1 orphan asset in `stars/` excluded from automatic import, and 53 Cloudinary assets outside migration scope (`samples/**` or root assets).
-- Real migration should not start before the official Firestore backup to GCS is completed and documented.
+- The base legacy migration has already been executed and validated in the current Firebase environment (`masmelito-f209c`).
+- The imported legacy sky exists as `shared-legacy-v1`, with `legacyCreatorKeys` preserved and a clean validation result (`errors = 0`).
+- Any future real migration re-run still requires a fresh official Firestore backup to GCS and the same operational gates.
 
 Operational priority right now:
 
-1. Official Firestore backup to GCS
-2. Prepare and validate migration tooling (`audit:crossref`, image import script, star import script, validation script)
-3. Implement auth/session plus the minimum runtime data model
-4. Implement storage/runtime support required for media
-5. Execute the real migration only when the roadmap dependencies are satisfied
+1. Implement auth/session plus the minimum runtime data model
+2. Implement storage/runtime support required for media
+3. Implement onboarding, claim, and invitation flows on top of the migrated base
+4. Keep migration tooling available for operational validation or justified re-runs
+5. Do not casually re-run real migration scripts after a valid execution
 
 ## 2. Commands
 
@@ -40,6 +42,11 @@ npm run typecheck    # tsc --noEmit
 npm run audit:firestore    # -> scripts/audit-report.json
 npm run audit:cloudinary   # -> scripts/cloudinary-report.json
 npm run audit:crossref     # -> scripts/migration-crossref-report.json
+
+# Legacy migration admin-only scripts
+npm run migrate:images     # dry-run by default; execute requires --backup-uri=gs://...
+npm run migrate:stars      # dry-run by default; execute requires --backup-uri=gs://...
+npm run validate:migration # validates Firestore + Storage against migration reports
 ```
 
 ## 3. Architecture
@@ -115,14 +122,17 @@ Si la respuesta es "no" a las 3, no proponerlo.
 - `.env.example` define los nombres de variables
 - `.env.local` es local y no debe versionarse
 - `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y nunca debe committearse
+- `FIREBASE_STORAGE_BUCKET` is script-only for admin migration/validation tooling
 - `NEXT_PUBLIC_FIREBASE_*` ya existe como contrato, pero todavia no se consume en runtime
 - Cloudinary solo es necesario para auditoria y migracion legacy
+- Legacy audit/migration reports may include real historical content or sensitive metadata and must remain local-only
 
 ## 6. Key Product and Data Decisions
 
 - `sky` is the root entity; stars must belong to a sky.
 - The legacy `stars` collection stays intact during migration.
 - The current legacy dataset is imported by explicit manual rule as one sky: `shared-legacy-v1`.
+- The current Firebase environment already contains the validated base import for `shared-legacy-v1`.
 - Legacy coordinates are preserved approximately as normalized values:
   - `xNormalized = clamp(x / 100, 0, 1)`
   - `yNormalized = clamp(y / 100, 0, 1)`
@@ -148,20 +158,21 @@ Si la respuesta es "no" a las 3, no proponerlo.
 - Migration scripts must be idempotent, traceable, and safe to re-run.
 - `npm run audit:crossref` is a preview/preparation step; it does not execute the real migration.
 - Do not reintroduce import-by-`createdBy` as the active migration rule for the current dataset.
+- Do not casually re-run `migrate:* --execute` after a clean validated migration. Treat any new execute run as an explicit operational event.
 - If changing migration behavior, update the master document and checklist in the same turn when appropriate.
 - Keep `src/domain/contracts.ts`, `src/domain/shared-legacy.ts`, and `src/domain/policies.ts` aligned; they are the source of truth for persisted shapes, shared legacy defaults, and policy defaults.
 - Prefer repository-consistent solutions: Next.js App Router, focused modules, plain CSS, minimal abstractions.
 
 ## 8. Current Phase and Priorities
 
-The repository has a working visual scaffold. Tooling preparation can happen before auth runtime, but the real migration still depends on the roadmap sequence in the master document.
+The repository has a working visual scaffold and a validated migrated legacy base in the current Firebase environment. The next front is product/runtime implementation, not more migration preparation.
 
 Current sequence should be:
 
-1. Complete and record the official Firestore backup to GCS
-2. Prepare and validate migration tooling (`audit:crossref`, image import script, star import script, validation script)
-3. Implement auth, sessions, and the minimum runtime data model
-4. Implement the storage/runtime support required for media
-5. Execute the real migration only when the roadmap dependencies are satisfied
+1. Implement auth, sessions, and the minimum runtime data model
+2. Implement the storage/runtime support required for media
+3. Build onboarding, claim, and invitation runtime flows
+4. Keep migration validation tooling available for operational checks
+5. Re-run real migration only if a concrete operational need appears and backup requirements are met
 
 For full product, data, and roadmap context, use `docs/documento-maestro-cielo-estrellado.md` as the main decision document.

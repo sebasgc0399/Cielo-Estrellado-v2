@@ -4,21 +4,36 @@ Base actual del proyecto para el relanzamiento de Cielo Estrellado. El repositor
 
 ## Estado actual
 
+### Runtime actual
+
 - Migracion visual a Next.js completada.
 - Ruta de referencia: `/demo`.
 - `SkyEngine.ts` se conserva sin cambios funcionales.
-- Hardening previo a Fase 2 aplicado:
+- Hardening base aplicado:
   - ESLint CLI no interactivo.
-  - Scripts de auditoria para Firestore y Cloudinary.
+  - Scripts de auditoria y migracion legacy.
   - Contrato de entorno con `.env.example` y `.env.local`.
 
 Todavia no estan implementados en runtime:
 
 - Autenticacion
-- Sesiones seguras
-- CRUD de cielos
-- Storage en Firebase
-- Invitaciones y colaboracion
+- Sesiones seguras con cookies HTTP-only
+- Dashboard de cielos
+- CRUD runtime de `skies`, `members` y `invites`
+- Flujo runtime de claim legacy
+- Integracion runtime visible con Firestore y Firebase Storage
+
+### Estado legacy verificado en el entorno actual (`masmelito-f209c`)
+
+- La migracion legacy base ya fue ejecutada y validada en el entorno Firebase actual.
+- El dataset legacy actual quedo importado como un unico cielo manual `shared-legacy-v1`.
+- Se preservaron los identificadores brutos `legacyCreatorKeys`.
+- Se migraron `26` imagenes referenciadas a Firebase Storage.
+- Se migraron `27` estrellas al esquema nuevo bajo `skies/shared-legacy-v1/stars`.
+- La validacion post-migracion cerro con `0` errores.
+- El cielo importado permanece en `claimStatus = unclaimed` y `ownerUserId = null`.
+- El primer claim aprobado sigue resolviendose como `legacy_claimant`, no como `owner`.
+- La corrida validada uso backup oficial a GCS registrado fuera del repo.
 
 ## Requisitos locales
 
@@ -74,8 +89,8 @@ Notas:
 - `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y no debe versionarse.
 - `FIREBASE_STORAGE_BUCKET` es script-only para tooling admin (`migrate:*`, `validate:migration`) y no debe acoplarse a `NEXT_PUBLIC_*`.
 - Las variables `NEXT_PUBLIC_*` se dejan preparadas para Fase 2; hoy la app aun no las consume.
-- Cloudinary solo es necesario para `audit:cloudinary`.
-- Los reportes de auditoria legacy pueden contener contenido real del sistema anterior y deben tratarse como archivos locales sensibles.
+- Cloudinary solo es necesario para `audit:cloudinary` y migracion legacy.
+- Los reportes de auditoria y migracion legacy pueden contener contenido real o metadata sensible del sistema anterior y deben tratarse como archivos locales sensibles.
 
 ## Scripts
 
@@ -89,6 +104,12 @@ Notas:
 - `npm run migrate:images`: migra media legacy referenciada a Firebase Storage (dry-run por defecto).
 - `npm run migrate:stars`: migra estrellas legacy al esquema `skies/shared-legacy-v1/stars` (dry-run por defecto).
 - `npm run validate:migration`: valida Firestore + Storage post-migracion contra reportes.
+
+Estado verificado del entorno actual:
+
+- `migrate:images` ya fue ejecutado con `uploaded = 26` y `failed = 0`.
+- `migrate:stars` ya fue ejecutado con `upserted = 27` y `failed = 0`.
+- `validate:migration` ya fue ejecutado con `errors = 0`.
 
 ## Auditoria legacy
 
@@ -145,11 +166,14 @@ Salida:
 
 - `scripts/migration-crossref-report.json`
 
-Nota:
+Notas:
 
 - `npm run audit:crossref` no ejecuta la migracion real ni escribe en Firestore o Storage; solo prepara y valida el preview del import.
+- El reporte generado por `audit:crossref` sigue siendo preparatorio, aun cuando la corrida base ya se haya ejecutado en el entorno actual.
 
 ## Tooling de migracion legacy (admin-only)
+
+La corrida base ya fue ejecutada y validada en el entorno Firebase actual. Esta seccion documenta el tooling y la forma segura de repetirlo solo si existe una necesidad operativa real.
 
 Precondiciones operativas antes de cualquier `--execute`:
 
@@ -181,6 +205,7 @@ Gates importantes:
 - `migrate:*` requiere `--backup-uri=gs://...` en modo `--execute`.
 - `migrate:stars` exige `migration-images-report.json` sin `failed`.
 - `validate:migration` retorna codigo no-cero ante faltantes, extras, duplicados o mismatch de contrato.
+- Los scripts son idempotentes, pero no deben re-ejecutarse casualmente despues de una corrida valida; solo ante una necesidad operativa clara y con backup fresco.
 
 Politica actual cerrada:
 
@@ -199,10 +224,10 @@ Politica actual cerrada:
 
 ## Siguiente paso recomendado
 
-Secuencia operativa alineada con el roadmap:
+Siguiente frente de trabajo sobre la base ya migrada:
 
-- registrar el backup oficial de Firestore en GCS
-- mantener `build`, `lint`, `typecheck` y las tres auditorias en verde
-- preparar y validar el tooling de migracion (`audit:crossref`, import script, validation script)
-- implementar auth/sesion, modelo minimo y runtime de media
-- ejecutar la migracion real solo cuando se cumplan las dependencias del roadmap maestro
+- implementar auth y sesiones seguras con cookies HTTP-only
+- implementar el modelo runtime minimo de `users`, `skies`, `stars`, `members`, `invites` y `legacyClaims`
+- construir rutas y UI de onboarding, claim legacy e invitaciones
+- integrar consumo runtime de Firestore y Firebase Storage
+- conservar el tooling de migracion solo para validacion operativa o re-ejecuciones justificadas
