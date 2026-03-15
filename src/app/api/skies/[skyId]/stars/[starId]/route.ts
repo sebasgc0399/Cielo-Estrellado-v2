@@ -55,7 +55,12 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       )
     }
 
-    const body = (await request.json()) as { title?: unknown; message?: unknown }
+    const body = (await request.json()) as {
+      title?: unknown
+      message?: unknown
+      xNormalized?: unknown
+      yNormalized?: unknown
+    }
 
     const rawTitle = typeof body.title === 'string' ? body.title.trim() : ''
     if (!rawTitle) {
@@ -80,7 +85,53 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const newMessage = rawMessage || null
-    if (rawTitle === star.title && newMessage === star.message) {
+
+    const coordsProvided = 'xNormalized' in body || 'yNormalized' in body
+    let parsedX: number | null = star.xNormalized
+    let parsedY: number | null = star.yNormalized
+
+    if (coordsProvided) {
+      const hasX = 'xNormalized' in body
+      const hasY = 'yNormalized' in body
+      if (!hasX || !hasY) {
+        return NextResponse.json(
+          { error: 'Ambas coordenadas son obligatorias si se proporciona una' },
+          { status: 400 },
+        )
+      }
+      if (body.xNormalized === null && body.yNormalized === null) {
+        parsedX = null
+        parsedY = null
+      } else {
+        if (typeof body.xNormalized !== 'number' || typeof body.yNormalized !== 'number') {
+          return NextResponse.json(
+            { error: 'Las coordenadas deben ser números' },
+            { status: 400 },
+          )
+        }
+        if (!Number.isFinite(body.xNormalized) || !Number.isFinite(body.yNormalized)) {
+          return NextResponse.json(
+            { error: 'Las coordenadas deben ser números finitos' },
+            { status: 400 },
+          )
+        }
+        if (body.xNormalized < 0 || body.xNormalized > 1 || body.yNormalized < 0 || body.yNormalized > 1) {
+          return NextResponse.json(
+            { error: 'Las coordenadas deben estar entre 0 y 1' },
+            { status: 400 },
+          )
+        }
+        parsedX = body.xNormalized
+        parsedY = body.yNormalized
+      }
+    }
+
+    if (
+      rawTitle === star.title &&
+      newMessage === star.message &&
+      parsedX === star.xNormalized &&
+      parsedY === star.yNormalized
+    ) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
@@ -88,6 +139,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     await starRef.update({
       title: rawTitle,
       message: newMessage,
+      xNormalized: parsedX,
+      yNormalized: parsedY,
       updatedAt: now,
       updatedByUserId: user.uid,
     })

@@ -1,0 +1,62 @@
+.previewContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    rgba(15, 23, 52, 0.95) 0%,
+    rgba(5, 8, 22, 0.98) 70%,
+    rgba(2, 3, 12, 1) 100%
+  );
+  border: 1px solid var(--panel-border);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.pickerActive {
+  cursor: crosshair;
+  border-color: rgba(143, 211, 255, 0.3);
+}
+
+.starDot {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(220, 235, 255, 0.85);
+  box-shadow: 0 0 6px 1px rgba(180, 215, 255, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.starDotHighlighted {
+  background: rgba(143, 211, 255, 0.95);
+  box-shadow: 0 0 10px 3px rgba(143, 211, 255, 0.5);
+  width: 9px;
+  height: 9px;
+}
+
+.selectedMarker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(143, 211, 255, 0.8);
+  background: rgba(143, 211, 255, 0.15);
+  box-shadow: 0 0 12px 2px rgba(143, 211, 255, 0.35);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.pickerHint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: rgba(180, 220, 255, 0.5);
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  white-space: nowrap;
+}

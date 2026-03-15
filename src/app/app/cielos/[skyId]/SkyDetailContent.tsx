@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { SkyRecord, MemberRecord, MemberRole, SkySource, StarRecord } from '@/domain/contracts'
 import type { StarEntry } from '@/lib/skies/getSkyStars'
+import { SkyPreview } from './SkyPreview'
 import styles from './SkyDetailContent.module.css'
 
 interface SkyDetailContentProps {
@@ -45,9 +46,14 @@ export function SkyDetailContent({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [createX, setCreateX] = useState<number | null>(null)
+  const [createY, setCreateY] = useState<number | null>(null)
+
   const [editingStarId, setEditingStarId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editMessage, setEditMessage] = useState('')
+  const [editX, setEditX] = useState<number | null>(null)
+  const [editY, setEditY] = useState<number | null>(null)
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -74,9 +80,13 @@ export function SkyDetailContent({
     setEditingStarId(null)
     setEditTitle('')
     setEditMessage('')
+    setEditX(null)
+    setEditY(null)
     setEditError(null)
     setDeletingStarId(null)
     setDeleteError(null)
+    setCreateX(null)
+    setCreateY(null)
     setIsCreating(true)
   }
 
@@ -85,12 +95,16 @@ export function SkyDetailContent({
     setIsCreating(false)
     setTitle('')
     setMessage('')
+    setCreateX(null)
+    setCreateY(null)
     setError(null)
     setDeletingStarId(null)
     setDeleteError(null)
     setEditingStarId(entry.starId)
     setEditTitle(entry.star.title ?? '')
     setEditMessage(entry.star.message ?? '')
+    setEditX(entry.star.xNormalized)
+    setEditY(entry.star.yNormalized)
     setEditError(null)
   }
 
@@ -99,10 +113,14 @@ export function SkyDetailContent({
     setIsCreating(false)
     setTitle('')
     setMessage('')
+    setCreateX(null)
+    setCreateY(null)
     setError(null)
     setEditingStarId(null)
     setEditTitle('')
     setEditMessage('')
+    setEditX(null)
+    setEditY(null)
     setEditError(null)
     setDeletingStarId(starId)
     setDeleteError(null)
@@ -133,13 +151,19 @@ export function SkyDetailContent({
     setError(null)
 
     try {
+      const payload: Record<string, unknown> = {
+        title: trimmedTitle,
+        message: trimmedMessage || undefined,
+      }
+      if (createX !== null && createY !== null) {
+        payload.xNormalized = createX
+        payload.yNormalized = createY
+      }
+
       const res = await fetch(`/api/skies/${skyId}/stars`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: trimmedTitle,
-          message: trimmedMessage || undefined,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
@@ -151,6 +175,8 @@ export function SkyDetailContent({
       setIsCreating(false)
       setTitle('')
       setMessage('')
+      setCreateX(null)
+      setCreateY(null)
       router.refresh()
     } catch {
       setError('No se pudo conectar con el servidor')
@@ -163,6 +189,8 @@ export function SkyDetailContent({
     setIsCreating(false)
     setTitle('')
     setMessage('')
+    setCreateX(null)
+    setCreateY(null)
     setError(null)
   }
 
@@ -192,6 +220,8 @@ export function SkyDetailContent({
         body: JSON.stringify({
           title: trimmedTitle,
           message: trimmedMessage || undefined,
+          xNormalized: editX,
+          yNormalized: editY,
         }),
       })
 
@@ -204,6 +234,8 @@ export function SkyDetailContent({
       setEditingStarId(null)
       setEditTitle('')
       setEditMessage('')
+      setEditX(null)
+      setEditY(null)
       router.refresh()
     } catch {
       setEditError('No se pudo conectar con el servidor')
@@ -216,6 +248,8 @@ export function SkyDetailContent({
     setEditingStarId(null)
     setEditTitle('')
     setEditMessage('')
+    setEditX(null)
+    setEditY(null)
     setEditError(null)
   }
 
@@ -265,6 +299,23 @@ export function SkyDetailContent({
           disabled={isSubmitting}
           maxLength={2000}
         />
+        <p className={styles.coordinateHint}>
+          {createX !== null && createY !== null ? (
+            <>
+              Posicion: ({createX.toFixed(2)}, {createY.toFixed(2)})
+              <button
+                className={styles.removePositionBtn}
+                onClick={() => { setCreateX(null); setCreateY(null) }}
+                disabled={isSubmitting}
+                type="button"
+              >
+                Quitar
+              </button>
+            </>
+          ) : (
+            'Sin posicion — toca el cielo para ubicar'
+          )}
+        </p>
         {error && <p className={styles.errorMsg}>{error}</p>}
         <div className={styles.formActions}>
           <button
@@ -313,6 +364,23 @@ export function SkyDetailContent({
           disabled={editSubmitting}
           maxLength={2000}
         />
+        <p className={styles.coordinateHint}>
+          {editX !== null && editY !== null ? (
+            <>
+              Posicion: ({editX.toFixed(2)}, {editY.toFixed(2)})
+              <button
+                className={styles.removePositionBtn}
+                onClick={() => { setEditX(null); setEditY(null) }}
+                disabled={editSubmitting}
+                type="button"
+              >
+                Quitar
+              </button>
+            </>
+          ) : (
+            'Sin posicion — toca el cielo para ubicar'
+          )}
+        </p>
         {editError && <p className={styles.errorMsg}>{editError}</p>}
         <div className={styles.formActions}>
           <button
@@ -412,6 +480,11 @@ export function SkyDetailContent({
                       year: 'numeric',
                     })}
                   </p>
+                  <p className={styles.positionStatus}>
+                    {entry.star.xNormalized !== null && entry.star.yNormalized !== null
+                      ? 'Ubicada'
+                      : 'Sin ubicacion'}
+                  </p>
                   {idle && canEditStar(entry.star) && (
                     <button
                       className={styles.editBtn}
@@ -504,6 +577,20 @@ export function SkyDetailContent({
         <h2 className={styles.sectionLabel}>
           Estrellas{!starsError && stars.length > 0 ? ` (${stars.length})` : ''}
         </h2>
+        <SkyPreview
+          stars={stars}
+          pickingActive={isCreating || editingStarId !== null}
+          selectedPosition={
+            isCreating
+              ? (createX !== null && createY !== null ? { x: createX, y: createY } : null)
+              : (editX !== null && editY !== null ? { x: editX, y: editY } : null)
+          }
+          onPick={(x, y) => {
+            if (isCreating) { setCreateX(x); setCreateY(y) }
+            else if (editingStarId) { setEditX(x); setEditY(y) }
+          }}
+          highlightStarId={editingStarId}
+        />
         {renderStarsContent()}
       </section>
     </div>

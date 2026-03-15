@@ -17,7 +17,12 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     const { skyId } = await params
 
-    const body = (await request.json()) as { title?: unknown; message?: unknown }
+    const body = (await request.json()) as {
+      title?: unknown
+      message?: unknown
+      xNormalized?: unknown
+      yNormalized?: unknown
+    }
 
     const rawTitle = typeof body.title === 'string' ? body.title.trim() : ''
     if (!rawTitle) {
@@ -39,6 +44,45 @@ export async function POST(request: Request, { params }: RouteContext) {
         { error: 'El mensaje no puede superar 2000 caracteres' },
         { status: 400 },
       )
+    }
+
+    const hasX = body.xNormalized !== undefined
+    const hasY = body.yNormalized !== undefined
+    let parsedX: number | null = null
+    let parsedY: number | null = null
+
+    if (hasX || hasY) {
+      if (!hasX || !hasY) {
+        return NextResponse.json(
+          { error: 'Ambas coordenadas son obligatorias si se proporciona una' },
+          { status: 400 },
+        )
+      }
+      if (body.xNormalized === null && body.yNormalized === null) {
+        parsedX = null
+        parsedY = null
+      } else {
+        if (typeof body.xNormalized !== 'number' || typeof body.yNormalized !== 'number') {
+          return NextResponse.json(
+            { error: 'Las coordenadas deben ser números' },
+            { status: 400 },
+          )
+        }
+        if (!Number.isFinite(body.xNormalized) || !Number.isFinite(body.yNormalized)) {
+          return NextResponse.json(
+            { error: 'Las coordenadas deben ser números finitos' },
+            { status: 400 },
+          )
+        }
+        if (body.xNormalized < 0 || body.xNormalized > 1 || body.yNormalized < 0 || body.yNormalized > 1) {
+          return NextResponse.json(
+            { error: 'Las coordenadas deben estar entre 0 y 1' },
+            { status: 400 },
+          )
+        }
+        parsedX = body.xNormalized
+        parsedY = body.yNormalized
+      }
     }
 
     const access = await getSkyWithAccess(skyId, user.uid)
@@ -75,8 +119,8 @@ export async function POST(request: Request, { params }: RouteContext) {
       message: rawMessage || null,
       imagePath: null,
       legacyUrl: null,
-      xNormalized: null,
-      yNormalized: null,
+      xNormalized: parsedX,
+      yNormalized: parsedY,
       year: null,
       authorUserId: user.uid,
       updatedByUserId: user.uid,

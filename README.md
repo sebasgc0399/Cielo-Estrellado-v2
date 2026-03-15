@@ -18,14 +18,14 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
   - `POST /api/skies` crea un cielo privado y su membership `owner`
   - `/app/cielos/[skyId]` valida membresia activa server-side
   - `/app/legacy` redirige al cielo legacy importado
-- Stars runtime minimo ya implementado en `/app/cielos/[skyId]`:
+- Stars runtime implementado en `/app/cielos/[skyId]`:
   - lectura de estrellas
-  - creacion texto-only
-  - edicion de titulo y mensaje
+  - creacion con coordenadas opcionales
+  - edicion de titulo, mensaje y posicion
   - soft-delete
+  - preview visual simple con posicionamiento por click/tap
 - Pendiente actual:
-  - coordenadas y posicionamiento
-  - editor/canvas
+  - editor/canvas completo (integracion SkyEngine)
   - media con Firebase Storage
   - invitaciones estandar y onboarding
   - realtime mas adelante
@@ -91,8 +91,7 @@ Notas:
 
 Orden recomendado:
 
-1. Coordenadas y posicionamiento de estrellas
-2. Editor/canvas del cielo
+1. Editor/canvas del cielo (integracion SkyEngine con stars reales)
 3. Media runtime con Firebase Storage
 4. Invitaciones estandar y onboarding
 
