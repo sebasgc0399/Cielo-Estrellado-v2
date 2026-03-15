@@ -32,14 +32,18 @@ Base actual del proyecto para el relanzamiento de Cielo Estrellado. El repositor
   - lectura server-side de cielos del usuario en `/app`
   - creacion de cielos privados y membresia owner en Firestore via `/api/skies`
   - ruta detalle de cielo en `/app/cielos/[skyId]` con validacion server-side de membresia activa
-  - la ruta detalle muestra metadata del cielo (titulo, rol, privacy, source, fecha) y un placeholder honesto para stars
+  - la ruta detalle muestra metadata del cielo (titulo, rol, privacy, source, fecha) y stars runtime minimo:
+    - lectura de estrellas del cielo en la ruta detalle
+    - creacion de estrellas (titulo y mensaje; sin imagen ni coordenadas aun)
+    - edicion de titulo y mensaje con permisos granulares (owner edita cualquier estrella, editor solo las suyas)
 
 Todavia no estan implementados en runtime:
 
-- Stars runtime (lectura, creacion y edicion de estrellas en cielos)
+- Borrado de estrellas (soft-delete)
+- Coordenadas y posicionamiento en canvas (xNormalized, yNormalized siguen en null)
+- Editor visual runtime (integracion SkyEngine)
 - Editor runtime del cielo (comportamiento de edicion de metadatos y canvas)
 - Flujo runtime de invitaciones
-- Flujo runtime de claim legacy
 - Integracion runtime de media con Firebase Storage
 - Reenvio de verificacion de email y onboarding completo post-login
 
@@ -51,8 +55,7 @@ Todavia no estan implementados en runtime:
 - Se migraron `26` imagenes referenciadas a Firebase Storage.
 - Se migraron `27` estrellas al esquema nuevo bajo `skies/shared-legacy-v1/stars`.
 - La validacion post-migracion cerro con `0` errores.
-- El cielo importado permanece en `claimStatus = unclaimed` y `ownerUserId = null`.
-- El primer claim aprobado sigue resolviendose como `legacy_claimant`, no como `owner`.
+- El cielo importado ya tiene ownership directa asignada (`ownerUserId` set, membership `owner` creada). El flujo de claim legacy queda superado como frente activo del producto.
 - La corrida validada uso backup oficial a GCS registrado fuera del repo.
 
 ## Requisitos locales
@@ -238,9 +241,7 @@ Politica actual cerrada:
 - Los assets en `samples/**`, assets root y el huerfano de `stars/` quedan fuera del import automatico.
 - Las coordenadas legacy se preservan de forma aproximada como valores normalizados `0..1`.
 - Para este dataset, la importacion se resuelve de forma manual como un unico cielo `shared-legacy-v1`; no se infiere automaticamente por `createdBy`.
-- No existe deteccion automatica de identidad legacy por email, nombre ni heuristicas; cualquier usuario con email verificado y sin claim activo ve el CTA `Solicitar revision de cielo legacy`.
-- El claim legacy requiere email verificado, revision administrativa y el primer claim aprobado solo habilita acceso limitado como `legacy_claimant`.
-- Solo puede existir un claim activo por combinacion `(skyId, legacyCreatorKey, claimantUserId)`.
+- El cielo legacy tiene ownership directa asignada. El flujo de claim legacy queda superado. La colaboracion con el segundo legacy creator se resuelve via invitacion estandar (editor).
 
 ## Documentacion
 
@@ -249,9 +250,9 @@ Politica actual cerrada:
 
 ## Siguiente paso recomendado
 
-Siguiente frente de trabajo sobre la base ya migrada, autenticada y con detalle de cielo:
+Siguiente frente de trabajo sobre la base ya migrada, autenticada y con stars runtime minimo:
 
-- expandir el detalle de cielo con stars runtime (lectura, creacion y edicion de estrellas)
-- integrar soporte runtime de media con Firebase Storage
-- construir claim legacy, invitaciones y onboarding sobre la base ya autenticada
+- completar el comportamiento runtime del cielo: borrado de estrellas, coordenadas y posicionamiento
+- integrar soporte runtime de media con Firebase Storage (imagePath)
+- construir invitaciones estandar y onboarding sobre la base ya autenticada
 - conservar el tooling de migracion solo para validacion operativa o re-ejecuciones justificadas

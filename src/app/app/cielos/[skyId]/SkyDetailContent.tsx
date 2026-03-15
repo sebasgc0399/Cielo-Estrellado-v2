@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { SkyRecord, MemberRecord, MemberRole, SkySource } from '@/domain/contracts'
+import type { SkyRecord, MemberRecord, MemberRole, SkySource, StarRecord } from '@/domain/contracts'
 import type { StarEntry } from '@/lib/skies/getSkyStars'
 import styles from './SkyDetailContent.module.css'
 
@@ -11,6 +11,7 @@ interface SkyDetailContentProps {
   skyId: string
   sky: SkyRecord
   member: MemberRecord
+  userId: string
   stars: StarEntry[]
   starsError: string | null
   canCreate: boolean
@@ -32,6 +33,7 @@ export function SkyDetailContent({
   skyId,
   sky,
   member,
+  userId,
   stars,
   starsError,
   canCreate,
@@ -43,6 +45,74 @@ export function SkyDetailContent({
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [editingStarId, setEditingStarId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editMessage, setEditMessage] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  const [deletingStarId, setDeletingStarId] = useState<string | null>(null)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  function canEditStar(star: StarRecord): boolean {
+    return (
+      member.role === 'owner' ||
+      (member.role === 'editor' && star.authorUserId === userId)
+    )
+  }
+
+  function canDeleteStar(star: StarRecord): boolean {
+    return (
+      member.role === 'owner' ||
+      (member.role === 'editor' && star.authorUserId === userId)
+    )
+  }
+
+  function openCreate() {
+    if (isSubmitting || editSubmitting || deleteSubmitting) return
+    setEditingStarId(null)
+    setEditTitle('')
+    setEditMessage('')
+    setEditError(null)
+    setDeletingStarId(null)
+    setDeleteError(null)
+    setIsCreating(true)
+  }
+
+  function openEdit(entry: StarEntry) {
+    if (isSubmitting || editSubmitting || deleteSubmitting) return
+    setIsCreating(false)
+    setTitle('')
+    setMessage('')
+    setError(null)
+    setDeletingStarId(null)
+    setDeleteError(null)
+    setEditingStarId(entry.starId)
+    setEditTitle(entry.star.title ?? '')
+    setEditMessage(entry.star.message ?? '')
+    setEditError(null)
+  }
+
+  function openDelete(starId: string) {
+    if (isSubmitting || editSubmitting || deleteSubmitting) return
+    setIsCreating(false)
+    setTitle('')
+    setMessage('')
+    setError(null)
+    setEditingStarId(null)
+    setEditTitle('')
+    setEditMessage('')
+    setEditError(null)
+    setDeletingStarId(starId)
+    setDeleteError(null)
+  }
+
+  function cancelDelete() {
+    setDeletingStarId(null)
+    setDeleteError(null)
+  }
 
   async function handleCreate() {
     const trimmedTitle = title.trim()
@@ -97,6 +167,80 @@ export function SkyDetailContent({
     setError(null)
   }
 
+  async function handleEditSave(starId: string) {
+    const trimmedTitle = editTitle.trim()
+    if (!trimmedTitle) {
+      setEditError('El titulo es obligatorio')
+      return
+    }
+    if (trimmedTitle.length > 200) {
+      setEditError('El titulo no puede superar 200 caracteres')
+      return
+    }
+    const trimmedMessage = editMessage.trim()
+    if (trimmedMessage.length > 2000) {
+      setEditError('El mensaje no puede superar 2000 caracteres')
+      return
+    }
+
+    setEditSubmitting(true)
+    setEditError(null)
+
+    try {
+      const res = await fetch(`/api/skies/${skyId}/stars/${starId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: trimmedTitle,
+          message: trimmedMessage || undefined,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        setEditError(data?.error || 'Error al guardar los cambios')
+        return
+      }
+
+      setEditingStarId(null)
+      setEditTitle('')
+      setEditMessage('')
+      router.refresh()
+    } catch {
+      setEditError('No se pudo conectar con el servidor')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  function handleEditCancel() {
+    setEditingStarId(null)
+    setEditTitle('')
+    setEditMessage('')
+    setEditError(null)
+  }
+
+  async function handleDeleteConfirm(starId: string) {
+    setDeleteSubmitting(true)
+    setDeleteError(null)
+    try {
+      const res = await fetch(`/api/skies/${skyId}/stars/${starId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        setDeleteError(data?.error || 'Error al eliminar la estrella')
+        return
+      }
+      setDeletingStarId(null)
+      router.refresh()
+    } catch {
+      setDeleteError('No se pudo conectar con el servidor')
+    } finally {
+      setDeleteSubmitting(false)
+    }
+  }
+
   function renderCreateForm() {
     return (
       <div className={styles.createForm}>
@@ -145,6 +289,54 @@ export function SkyDetailContent({
     )
   }
 
+  function renderEditForm(starId: string) {
+    return (
+      <div className={styles.editForm}>
+        <input
+          type="text"
+          className={styles.titleInput}
+          placeholder="Nombre de la estrella"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !editSubmitting) handleEditSave(starId)
+            if (e.key === 'Escape') handleEditCancel()
+          }}
+          disabled={editSubmitting}
+          maxLength={200}
+          autoFocus
+        />
+        <textarea
+          className={styles.messageInput}
+          placeholder="Mensaje o recuerdo (opcional)"
+          value={editMessage}
+          onChange={(e) => setEditMessage(e.target.value)}
+          disabled={editSubmitting}
+          maxLength={2000}
+        />
+        {editError && <p className={styles.errorMsg}>{editError}</p>}
+        <div className={styles.formActions}>
+          <button
+            className={styles.ctaBtnEnabled}
+            onClick={() => handleEditSave(starId)}
+            disabled={editSubmitting}
+            type="button"
+          >
+            {editSubmitting ? 'Guardando…' : 'Guardar'}
+          </button>
+          <button
+            className={styles.cancelBtn}
+            onClick={handleEditCancel}
+            disabled={editSubmitting}
+            type="button"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   function renderStarsContent() {
     if (starsError) {
       return (
@@ -183,7 +375,7 @@ export function SkyDetailContent({
             ) : (
               <button
                 className={styles.ctaBtnEnabled}
-                onClick={() => setIsCreating(true)}
+                onClick={openCreate}
                 type="button"
               >
                 Crear primera estrella
@@ -194,39 +386,93 @@ export function SkyDetailContent({
       )
     }
 
+    const idle =
+      !isCreating && !isSubmitting &&
+      editingStarId === null && !editSubmitting &&
+      deletingStarId === null && !deleteSubmitting
+
     return (
       <>
         <div className={styles.starList}>
           {stars.map((entry) => (
             <div key={entry.starId} className={styles.starCard}>
-              <p className={styles.starTitle}>
-                {entry.star.title || 'Sin titulo'}
-              </p>
-              {entry.star.message && (
-                <p className={styles.starMessage}>{entry.star.message}</p>
+              {editingStarId === entry.starId ? (
+                renderEditForm(entry.starId)
+              ) : (
+                <>
+                  <p className={styles.starTitle}>
+                    {entry.star.title || 'Sin titulo'}
+                  </p>
+                  {entry.star.message && (
+                    <p className={styles.starMessage}>{entry.star.message}</p>
+                  )}
+                  <p className={styles.starDate}>
+                    {new Date(entry.star.createdAt).toLocaleDateString('es', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </p>
+                  {idle && canEditStar(entry.star) && (
+                    <button
+                      className={styles.editBtn}
+                      onClick={() => openEdit(entry)}
+                      type="button"
+                    >
+                      Editar
+                    </button>
+                  )}
+                  {idle && canDeleteStar(entry.star) && (
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={() => openDelete(entry.starId)}
+                      type="button"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                  {deletingStarId === entry.starId && (
+                    <div className={styles.deleteConfirm}>
+                      <span className={styles.deleteConfirmText}>
+                        ¿Eliminar esta estrella?
+                      </span>
+                      {deleteError && (
+                        <p className={styles.errorMsg}>{deleteError}</p>
+                      )}
+                      <div className={styles.deleteConfirmActions}>
+                        <button
+                          className={styles.deleteConfirmBtn}
+                          onClick={() => handleDeleteConfirm(entry.starId)}
+                          disabled={deleteSubmitting}
+                          type="button"
+                        >
+                          {deleteSubmitting ? 'Eliminando…' : 'Eliminar'}
+                        </button>
+                        <button
+                          className={styles.cancelBtn}
+                          onClick={cancelDelete}
+                          disabled={deleteSubmitting}
+                          type="button"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
-              <p className={styles.starDate}>
-                {new Date(entry.star.createdAt).toLocaleDateString('es', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
             </div>
           ))}
         </div>
-        {canCreate && (
-          isCreating ? (
-            renderCreateForm()
-          ) : (
-            <button
-              className={styles.secondaryBtn}
-              onClick={() => setIsCreating(true)}
-              type="button"
-            >
-              Crear nueva estrella
-            </button>
-          )
+        {isCreating && renderCreateForm()}
+        {canCreate && idle && (
+          <button
+            className={styles.secondaryBtn}
+            onClick={openCreate}
+            type="button"
+          >
+            Crear nueva estrella
+          </button>
         )}
       </>
     )

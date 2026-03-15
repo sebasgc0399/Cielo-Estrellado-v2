@@ -161,12 +161,11 @@ La primera version funcional seria del producto debe enfocarse en el caso de uso
 
 ### Onboarding inicial del MVP
 
+> **[Actualizado 2026-03-14]** Los puntos sobre claim legacy CTA y claim pendiente quedan superados (ver §11).
+
 - Existe un solo entrypoint despues de login.
-- Si el usuario no tiene legado ni invitacion, el CTA principal es crear su primer cielo.
-- No existe deteccion automatica de identidad legacy por email, nombre ni heuristicas.
-- Cualquier usuario con email verificado, sin un claim activo sobre `shared-legacy-v1`, ve el CTA secundario `Solicitar revision de cielo legacy`.
+- Si el usuario no tiene cielos ni invitacion, el CTA principal es crear su primer cielo.
 - Si el usuario entra con invitacion, acepta la invitacion primero.
-- Si el usuario tiene legado y ademas una invitacion activa, acepta la invitacion primero y luego ve un banner persistente para iniciar el claim legacy.
 
 ### Personalizacion persistente del MVP
 
@@ -178,7 +177,7 @@ La primera version funcional seria del producto debe enfocarse en el caso de uso
   - `twinkleEnabled`
   - `shootingStarsEnabled`
 - El MVP no persiste preferencias tecnicas del dispositivo como `quality` o `motion`.
-- Mientras un cielo legacy este en `partially_claimed`, nadie puede cambiar su personalizacion global.
+- ~~Mientras un cielo legacy este en `partially_claimed`, nadie puede cambiar su personalizacion global.~~ (Superado: claim legacy ya no aplica)
 
 ## 6. Arquitectura base propuesta
 
@@ -495,6 +494,8 @@ La migracion debe ser segura, trazable e idempotente. El objetivo no es mover da
 
 ### Reclamacion de contenido legado
 
+> **[Superado 2026-03-14]** Esta seccion queda como trazabilidad historica. El flujo de claim legacy fue superado por la decision de ownership directa (ver decision en §11). El cielo legacy queda bajo propiedad directa del usuario principal y la colaboracion con el segundo creator se resuelve via invitacion estandar.
+
 Dado que hoy no esta confirmado que existan cuentas reutilizables asociadas a `createdBy`, el contenido legado no debe asumirse como ya vinculado a una identidad nueva.
 
 Decision operativa cerrada:
@@ -601,6 +602,7 @@ Los siguientes puntos siguen abiertos y deberan refinarse antes de entrar a impl
 - Antes de migrar se exige backup dual: export oficial a GCS + reportes locales.
 - La sesion del MVP usa cookie HTTP-only de `5` dias, renovacion deslizante de `24` horas y `SameSite=Lax`.
 - Claim legacy e invitaciones requieren email verificado.
+- **[2026-03-14] Transicion a ownership directa del cielo legacy.** El cielo `shared-legacy-v1` queda bajo propiedad directa del usuario principal (uid `G3Sr0P2LAORmFi5yiT8cxwd7n8I2`). El flujo de claim legacy queda superado como frente activo del producto. La colaboracion con el segundo legacy creator se resuelve via invitacion estandar (editor). Los tipos y contratos de claim (`SkyClaimStatus`, `ClaimReviewStatus`, `LegacyClaimRecord`, `legacy_claimant`) se eliminaran del runtime en una fase de simplificacion posterior. El tooling de migracion se revisara en una fase de archivo separada. Las secciones de claim en este documento quedan marcadas como superadas pero se preservan como trazabilidad historica.
 
 ## 12. Preguntas abiertas
 

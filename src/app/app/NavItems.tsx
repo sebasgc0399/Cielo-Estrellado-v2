@@ -6,7 +6,6 @@ import styles from './layout.module.css'
 
 const NAV_ITEMS = [
   { href: '/app', label: 'Mi cielo' },
-  { href: '/app/legacy', label: 'Cielo heredado' },
   { href: '/app/perfil', label: 'Yo' },
 ] as const
 

@@ -150,7 +150,7 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
 
       {!user.emailVerified && (
         <div className={styles.emailBanner} role="alert">
-          Verifica tu email para reclamar un cielo o aceptar invitaciones.
+          Verifica tu email para acceder a todas las funciones.
         </div>
       )}
 
@@ -246,10 +246,10 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
         <div className={styles.legacyCard}>
           <span className={styles.legacyCardLabel}>Cielo heredado</span>
           <p className={styles.legacyCardText}>
-            Si participaste en el sistema anterior, puedes solicitar revisión de tu cielo legacy.
+            Tu cielo heredado ya esta disponible con todas las estrellas del sistema anterior.
           </p>
-          <Link href="/app/legacy" className={styles.legacyCardBtn}>
-            Solicitar revisión
+          <Link href="/app/cielos/shared-legacy-v1" className={styles.legacyCardBtn}>
+            Ver cielo heredado
           </Link>
         </div>
       </section>

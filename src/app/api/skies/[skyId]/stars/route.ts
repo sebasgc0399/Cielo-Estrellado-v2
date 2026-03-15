@@ -44,6 +44,12 @@ export async function POST(request: Request, { params }: RouteContext) {
     const access = await getSkyWithAccess(skyId, user.uid)
 
     if (!access.ok) {
+      if (access.reason === 'error') {
+        return NextResponse.json(
+          { error: 'Error interno al verificar acceso' },
+          { status: 500 },
+        )
+      }
       return NextResponse.json(
         { error: 'Cielo no encontrado' },
         { status: 404 },

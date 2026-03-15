@@ -23,7 +23,12 @@
       "mcp__firebase__firebase_get_project",
       "WebFetch(domain:ui.shadcn.com)",
       "mcp__magicuidesign-mcp__listRegistryItems",
-      "mcp__shadcn__get_project_registries"
+      "mcp__shadcn__get_project_registries",
+      "Bash(grep -r \"handleEditSave\\\\|PATCH\" '/d/Proyectos VS CODE/Cielo_Estrellado/cielo-estrellado-v4/src/app/app/cielos/\\\\[skyId\\\\]' --include=*.tsx --include=*.ts)",
+      "mcp__firebase__firestore_list_documents",
+      "mcp__firebase__auth_get_users",
+      "mcp__firebase__firestore_get_document",
+      "mcp__firebase__firestore_update_document"
     ],
     "additionalDirectories": [
       "d:\\Proyectos VS CODE\\Cielo_Estrellado\\cielo-estrellado-v4\\src\\app\\app\\cielos\\[skyId]"
