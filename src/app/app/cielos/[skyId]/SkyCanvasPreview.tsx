@@ -23,7 +23,11 @@ interface SkyCanvasPreviewProps {
   selectedPosition: { x: number; y: number } | null
   onStarClick?: (starId: string) => void
   onPick?: (x: number, y: number) => void
+  onEmptySpaceClick?: (x: number, y: number) => void
   highlightStarId?: string | null
+  draggableStarIds?: Set<string>
+  onStarDrop?: (starId: string, nx: number, ny: number) => Promise<boolean>
+  onStarDragCancel?: (starId: string) => void
 }
 
 export function SkyCanvasPreview({
@@ -32,7 +36,11 @@ export function SkyCanvasPreview({
   selectedPosition,
   onStarClick,
   onPick,
+  onEmptySpaceClick,
   highlightStarId,
+  draggableStarIds,
+  onStarDrop,
+  onStarDragCancel,
 }: SkyCanvasPreviewProps) {
   const effectiveUserStars = useMemo(
     () =>
@@ -55,8 +63,12 @@ export function SkyCanvasPreview({
         userStars={effectiveUserStars}
         onStarClick={onStarClick}
         onCanvasClick={pickingActive ? onPick : undefined}
+        onEmptySpaceClick={pickingActive ? undefined : onEmptySpaceClick}
         pickingActive={pickingActive}
         touchMode="tap-only"
+        draggableStarIds={draggableStarIds}
+        onStarDrop={onStarDrop}
+        onStarDragCancel={onStarDragCancel}
       />
 
       {selectedPosition && (

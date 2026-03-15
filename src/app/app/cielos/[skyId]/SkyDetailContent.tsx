@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { SkyRecord, MemberRecord, MemberRole, SkySource, StarRecord } from '@/domain/contracts'
@@ -63,12 +63,21 @@ export function SkyDetailContent({
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const [flashingStarId, setFlashingStarId] = useState<string | null>(null)
+  const [isCommitting, setIsCommitting] = useState(false)
+
+  const createFormRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (!flashingStarId) return
     const timer = setTimeout(() => setFlashingStarId(null), 800)
     return () => clearTimeout(timer)
   }, [flashingStarId])
+
+  useEffect(() => {
+    if (isCreating && createX !== null) {
+      createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [isCreating, createX])
 
   const userStars: UserStar[] = useMemo(
     () =>
@@ -104,7 +113,55 @@ export function SkyDetailContent({
     )
   }
 
-  function openCreate() {
+  const draggableStarIds = useMemo((): Set<string> => {
+    if (isCreating || editingStarId !== null || isCommitting) return new Set()
+    const ids = new Set<string>()
+    for (const entry of stars) {
+      if (
+        entry.star.xNormalized !== null &&
+        entry.star.title !== null &&
+        entry.star.title.trim() !== '' &&
+        canEditStar(entry.star)
+      ) ids.add(entry.starId)
+    }
+    return ids
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stars, isCreating, editingStarId, isCommitting, member.role, userId])
+
+  async function handleStarDrop(starId: string, nx: number, ny: number): Promise<boolean> {
+    const entry = stars.find(e => e.starId === starId)
+    if (!entry) return false
+    setIsCommitting(true)
+    try {
+      const res = await fetch(`/api/skies/${skyId}/stars/${starId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: entry.star.title ?? '',
+          message: entry.star.message ?? undefined,
+          xNormalized: nx,
+          yNormalized: ny,
+        }),
+      })
+      if (!res.ok) {
+        router.refresh()
+        return false
+      }
+      router.refresh()
+      return true
+    } catch {
+      router.refresh()
+      return false
+    } finally {
+      setIsCommitting(false)
+    }
+  }
+
+  function handleStarDragCancel(_starId: string) {
+    // SkyCanvas already reverted engine.setUserStars before calling this.
+  }
+
+  function openCreate(initialX?: number, initialY?: number) {
     if (isSubmitting || editSubmitting || deleteSubmitting) return
     setEditingStarId(null)
     setEditTitle('')
@@ -114,9 +171,16 @@ export function SkyDetailContent({
     setEditError(null)
     setDeletingStarId(null)
     setDeleteError(null)
-    setCreateX(null)
-    setCreateY(null)
+    setCreateX(initialX ?? null)
+    setCreateY(initialY ?? null)
     setIsCreating(true)
+  }
+
+  function handleEmptySpaceClick(x: number, y: number) {
+    if (!canCreate) return
+    if (isCreating || editingStarId !== null || deletingStarId !== null) return
+    if (isSubmitting || editSubmitting || deleteSubmitting || isCommitting) return
+    openCreate(x, y)
   }
 
   function openEdit(entry: StarEntry) {
@@ -313,7 +377,7 @@ export function SkyDetailContent({
 
   function renderCreateForm() {
     return (
-      <div className={styles.createForm}>
+      <div className={styles.createForm} ref={createFormRef}>
         <input
           type="text"
           className={styles.titleInput}
@@ -563,7 +627,7 @@ export function SkyDetailContent({
             ) : (
               <button
                 className={styles.ctaBtnEnabled}
-                onClick={openCreate}
+                onClick={() => openCreate()}
                 type="button"
               >
                 Crear primera estrella
@@ -661,7 +725,7 @@ export function SkyDetailContent({
         {canCreate && idle && (
           <button
             className={styles.secondaryBtn}
-            onClick={openCreate}
+            onClick={() => openCreate()}
             type="button"
           >
             Crear nueva estrella
@@ -711,7 +775,11 @@ export function SkyDetailContent({
             if (isCreating) { setCreateX(x); setCreateY(y) }
             else if (editingStarId) { setEditX(x); setEditY(y) }
           }}
+          onEmptySpaceClick={handleEmptySpaceClick}
           highlightStarId={editingStarId}
+          draggableStarIds={draggableStarIds}
+          onStarDrop={handleStarDrop}
+          onStarDragCancel={handleStarDragCancel}
         />
         {renderStarsContent()}
       </section>

@@ -191,6 +191,19 @@ export class SkyEngine {
     this.needsUserStars = true
   }
 
+  getParallaxOffset(): { x: number; y: number } {
+    const nearParallax = this.layers.near.settings.parallax
+    return {
+      x: this.inputCurrent.x * this.width * nearParallax,
+      y: this.inputCurrent.y * this.height * nearParallax,
+    }
+  }
+
+  syncInputTargetToCurrent(): void {
+    this.inputTarget.x = this.inputCurrent.x
+    this.inputTarget.y = this.inputCurrent.y
+  }
+
   hitTest(clientX: number, clientY: number): string | null {
     const nearParallax = this.layers.near.settings.parallax
     const offsetX = this.inputCurrent.x * this.width * nearParallax
