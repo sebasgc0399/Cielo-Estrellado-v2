@@ -36,10 +36,10 @@ Base actual del proyecto para el relanzamiento de Cielo Estrellado. El repositor
     - lectura de estrellas del cielo en la ruta detalle
     - creacion de estrellas (titulo y mensaje; sin imagen ni coordenadas aun)
     - edicion de titulo y mensaje con permisos granulares (owner edita cualquier estrella, editor solo las suyas)
+    - borrado de estrellas (soft-delete) con permisos granulares (owner borra cualquiera, editor solo las suyas)
 
 Todavia no estan implementados en runtime:
 
-- Borrado de estrellas (soft-delete)
 - Coordenadas y posicionamiento en canvas (xNormalized, yNormalized siguen en null)
 - Editor visual runtime (integracion SkyEngine)
 - Editor runtime del cielo (comportamiento de edicion de metadatos y canvas)
@@ -252,7 +252,7 @@ Politica actual cerrada:
 
 Siguiente frente de trabajo sobre la base ya migrada, autenticada y con stars runtime minimo:
 
-- completar el comportamiento runtime del cielo: borrado de estrellas, coordenadas y posicionamiento
+- completar el comportamiento runtime del cielo: coordenadas, posicionamiento y editor/canvas
 - integrar soporte runtime de media con Firebase Storage (imagePath)
 - construir invitaciones estandar y onboarding sobre la base ya autenticada
 - conservar el tooling de migracion solo para validacion operativa o re-ejecuciones justificadas

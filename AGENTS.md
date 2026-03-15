@@ -21,8 +21,8 @@ Current repository state:
   - `/app` reads the authenticated user's skies from Firestore
   - `POST /api/skies` creates a private sky plus the owner membership
   - `firestore.indexes.json` versions the required `collectionGroup('members')` index
-  - `/app/cielos/[skyId]` is a protected detail route that validates active membership server-side and shows sky metadata (title, role, privacy, source, date) with minimum stars runtime: read/create/edit text-only stars, role-based permissions (owner edits any star, editor edits only own stars)
-- Minimum stars runtime is implemented (read, create, edit text-only stars). Not yet implemented: star deletion, canvas positioning, media uploads, editor behavior, invitations, realtime, and Firebase Storage media flows.
+  - `/app/cielos/[skyId]` is a protected detail route that validates active membership server-side and shows sky metadata (title, role, privacy, source, date) with stars runtime: read, create, edit, and soft-delete text-only stars, role-based permissions (owner edits/deletes any star, editor edits/deletes only own stars)
+- Stars runtime includes read, create, edit, and soft-delete. Not yet implemented: canvas positioning (coordinates), media uploads, editor/canvas integration, invitations, realtime, and Firebase Storage media flows.
 
 Legacy status:
 
@@ -35,7 +35,7 @@ Legacy status:
 
 Operational priority right now:
 
-1. Complete sky runtime behavior: star deletion (soft-delete), coordinates, and canvas positioning
+1. Complete sky runtime behavior: coordinates, canvas positioning, and editor/canvas integration
 2. Implement storage/runtime support for media (imagePath, Firebase Storage)
 3. Build standard invitation flows (editor/viewer) and onboarding on top of the existing base
 4. Keep migration tooling available for operational validation or justified re-runs
@@ -71,7 +71,7 @@ npm run validate:migration # validates Firestore + Storage against migration rep
 - `src/app/`: Next.js App Router. Home redirects to `/demo`.
 - `src/app/login/`: runtime auth entrypoint.
 - `src/app/app/`: authenticated shell and private pages, including `/app/cielos/[skyId]` for sky detail.
-- `src/app/api/skies/`: sky creation endpoint (`POST /api/skies`), plus stars endpoints (`POST /api/skies/[skyId]/stars`, `PATCH /api/skies/[skyId]/stars/[starId]`).
+- `src/app/api/skies/`: sky creation (`POST /api/skies`), stars endpoints (`POST`, `PATCH`, `DELETE` under `/api/skies/[skyId]/stars/[starId]`).
 - `src/app/api/auth/`: session creation and logout routes.
 - `src/app/demo/`: demo route and loader for the visual baseline.
 - `src/components/sky/`: React UI layer around the sky renderer.
@@ -185,11 +185,11 @@ Si la respuesta es "no" a las 3, no proponerlo.
 
 ## 8. Current Phase and Priorities
 
-The repository has a working visual scaffold, a validated migrated legacy base in the current Firebase environment, a minimum auth/session runtime, a sky creation/listing slice, a sky detail route with membership validation, and minimum stars runtime (read/create/edit text-only stars with role-based permissions). The next front is completing sky runtime behavior (deletion, coordinates, positioning) and then media, not more migration preparation.
+The repository has a working visual scaffold, a validated migrated legacy base in the current Firebase environment, a minimum auth/session runtime, a sky creation/listing slice, a sky detail route with membership validation, and stars runtime (read, create, edit, soft-delete text-only stars with role-based permissions). The next front is completing sky runtime behavior (coordinates, canvas positioning, editor integration) and then media, not more migration preparation.
 
 Current sequence should be:
 
-1. Complete sky runtime behavior: star deletion (soft-delete), coordinates, and canvas positioning on top of the existing `/app/cielos/[skyId]`
+1. Complete sky runtime behavior: coordinates, canvas positioning, and editor/canvas integration on top of the existing `/app/cielos/[skyId]`
 2. Implement the storage/runtime support required for media (imagePath, Firebase Storage)
 3. Build standard invitation runtime flows (editor/viewer) and onboarding
 4. Keep migration validation tooling available for operational checks and re-run real migration only if a concrete operational need appears and backup requirements are met
