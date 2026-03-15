@@ -1,5 +1,18 @@
 # Legacy Migration Checklist
 
+> **ESTADO: ARCHIVADO** — Migración completada (Fase 0-2, 2026). Fase 3 de limpieza ejecutada.
+> Cielo `shared-legacy-v1` bajo ownership directo. Claim legacy superado.
+>
+> **Sobre el tooling conservado:**
+> Los scripts en `scripts/` son archivo histórico con semántica del checkpoint de importación.
+> `validate-legacy-migration.ts` valida el estado al momento de importación
+> (`claimStatus = 'unclaimed'`, `ownerUserId = null`), NO el estado runtime actual.
+> Ejecutarlo hoy producirá fallos esperados — el cielo ya tiene owner y puede haber cambiado.
+> No reejecutar `migrate:* --execute` ni `validate:migration` como tooling del modelo activo.
+>
+> Los reportes JSON en `scripts/*.json` son artefactos gitignored de la migración completada,
+> no son source of truth activo.
+
 Checklist operativo para cerrar Fase 0 antes de ejecutar cualquier migracion real sobre datos productivos.
 
 ## Hallazgos confirmados

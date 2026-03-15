@@ -1,4 +1,8 @@
 /**
+ * @deprecated ARCHIVO HISTÓRICO — Auditoría pre-migración completada (Fase 0, 2026).
+ * Solo-lectura. Conservado para trazabilidad.
+ * Ver docs/legacy-migration-checklist.md.
+ *
  * Cross-reference legacy Firestore stars against Cloudinary inventory.
  *
  * Usage:
@@ -22,12 +26,28 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  DEFAULT_SKY_PERSONALIZATION,
-  SHARED_LEGACY_IMPORT_BATCH,
-  SHARED_LEGACY_IMPORT_CONFIG,
-  SHARED_LEGACY_SKY_ID,
-} from '../src/domain/shared-legacy'
+
+// ARCHIVO HISTÓRICO — Constantes de importación legacy inline (movidas desde src/domain/shared-legacy)
+const SHARED_LEGACY_SKY_ID = 'shared-legacy-v1' as const
+const SHARED_LEGACY_IMPORT_BATCH = 'shared-legacy-v1' as const
+const DEFAULT_SKY_PERSONALIZATION = {
+  theme: 'classic',
+  density: 'medium',
+  nebulaEnabled: true,
+  twinkleEnabled: true,
+  shootingStarsEnabled: true,
+} as const
+const SHARED_LEGACY_IMPORT_CONFIG = {
+  skyId: SHARED_LEGACY_SKY_ID,
+  title: 'Cielo legacy importado',
+  source: 'legacy_import',
+  importBatch: SHARED_LEGACY_IMPORT_BATCH,
+  initialClaimStatus: 'unclaimed',      // semántica de fase anterior
+  ownershipAssignmentOnImport: 'none',
+  defaultMemberRoleAfterFirstApprovedClaim: 'legacy_claimant',
+  memberRolesAfterFullClaimResolution: ['owner', 'editor'] as const,
+  defaultPersonalization: DEFAULT_SKY_PERSONALIZATION,  // usado en crossref report
+} as const
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

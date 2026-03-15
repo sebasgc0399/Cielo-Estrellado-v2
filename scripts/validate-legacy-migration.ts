@@ -1,3 +1,18 @@
+/**
+ * @deprecated ARCHIVO HISTÓRICO — Validador del checkpoint de importación (Fase 2, 2026).
+ *
+ * IMPORTANTE: Este script valida el estado histórico del momento de importación:
+ *   - claimStatus === 'unclaimed'
+ *   - ownerUserId === null
+ *
+ * El cielo shared-legacy-v1 ya NO tiene ese estado: tiene ownership directo asignado
+ * y puede haber recibido cambios posteriores. Ejecutar este script contra el estado
+ * runtime actual FALLARÁ con errores esperados — eso es correcto, no un bug.
+ *
+ * No actualizar este script para reflejar el modelo nuevo. Conservado como archivo.
+ * Ver docs/legacy-migration-checklist.md.
+ */
+
 import './load-env'
 
 import {

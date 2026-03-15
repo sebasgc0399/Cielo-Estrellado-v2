@@ -1,3 +1,10 @@
+/**
+ * @deprecated ARCHIVO HISTÓRICO — Migración legacy completada (Fase 1-2, 2026).
+ * NO reejecutar --execute. El cielo shared-legacy-v1 ya existe con datos migrados.
+ * Este script refleja el estado en el momento de importación, no el estado runtime actual.
+ * Ver docs/legacy-migration-checklist.md.
+ */
+
 import './load-env'
 
 import {

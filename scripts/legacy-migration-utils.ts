@@ -1,3 +1,17 @@
+/**
+ * @deprecated ARCHIVO HISTÓRICO — Utilidades compartidas del tooling de migración legacy (Fase 0-2, 2026).
+ *
+ * Los tipos, rutas de reportes y funciones definidos aquí (incluido assertCrossrefBaseline)
+ * corresponden al checkpoint histórico de importación:
+ *   - claimStatus === 'unclaimed'
+ *   - ownerUserId === null
+ *   - 27 stars, 26 assets, 1 sin imagen, 1 huérfano
+ *
+ * No representan el estado runtime actual del cielo shared-legacy-v1.
+ * No actualizar para reflejar el modelo nuevo. Conservado como archivo.
+ * Ver docs/legacy-migration-checklist.md.
+ */
+
 import { cert, getApp, getApps, initializeApp, type App } from 'firebase-admin/app'
 import { getFirestore, type Firestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'

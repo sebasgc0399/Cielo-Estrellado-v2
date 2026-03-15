@@ -83,3 +83,10 @@ export interface InviteRecord {
   acceptedAt: IsoDateString | null
 }
 
+export const DEFAULT_SKY_PERSONALIZATION: SkyPersonalization = {
+  theme: 'classic',
+  density: 'medium',
+  nebulaEnabled: true,
+  twinkleEnabled: true,
+  shootingStarsEnabled: true,
+}

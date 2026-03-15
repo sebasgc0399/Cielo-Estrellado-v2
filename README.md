@@ -45,12 +45,10 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
 - Onboarding minimo: estado vacio en `/app` con CTA "Crear mi primer cielo"
 ## Estado legacy
 
-- El dataset legacy ya fue importado y validado en `masmelito-f209c`.
-- El cielo importado existe como `shared-legacy-v1`.
-- Ese cielo ya tiene ownership directa asignada.
-- El claim legacy ya no es un frente activo del producto.
-- El tooling legacy se conserva solo para validacion operativa y archivo futuro.
-- La Fase 3 de limpieza/archivo legacy sigue pendiente y no es prioridad actual.
+- El dataset legacy fue importado y validado en `masmelito-f209c`.
+- El cielo `shared-legacy-v1` tiene ownership directo asignado. Claim legacy superado.
+- Fase 3 (limpieza/archivo) completada: dominio limpio, tooling conservado solo como archivo historico.
+- El tooling en `scripts/` refleja el checkpoint de importacion, no el estado runtime actual.
 
 ## Arranque local y comandos
 
@@ -65,16 +63,15 @@ Comandos base:
 - `npm run lint`
 - `npm run typecheck`
 
-Tooling legacy:
+Tooling legacy (archivo historico — no es tooling activo del modelo):
 
-- `npm run audit:firestore`
-- `npm run audit:cloudinary`
-- `npm run audit:crossref`
-- `npm run migrate:images`
-- `npm run migrate:stars`
-- `npm run validate:migration`
-
-No reejecutes `migrate:* --execute` casualmente despues de una corrida validada.
+- `npm run audit:firestore` — auditoria pre-migracion (solo lectura)
+- `npm run audit:cloudinary` — inventario Cloudinary pre-migracion (solo lectura)
+- `npm run audit:crossref` — cruce Firestore/Cloudinary pre-migracion (solo lectura)
+- `npm run migrate:images` — migracion imagenes completada; no reejecutar con `--execute`
+- `npm run migrate:stars` — migracion estrellas completada; no reejecutar con `--execute`
+- `npm run validate:migration` — validador del checkpoint historico de importacion;
+  fallara contra el estado runtime actual (esperado: el cielo ya tiene owner)
 
 ## Variables y entorno
 

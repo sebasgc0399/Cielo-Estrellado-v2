@@ -1,4 +1,8 @@
 /**
+ * @deprecated ARCHIVO HISTÓRICO — Auditoría pre-migración completada (Fase 0, 2026).
+ * Solo-lectura. Conservado para trazabilidad.
+ * Ver docs/legacy-migration-checklist.md.
+ *
  * Script de inventario de imágenes en Cloudinary.
  *
  * Uso:

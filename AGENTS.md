@@ -26,21 +26,27 @@ Codex no debe editar ni ejecutar cambios por defecto. Solo debe hacerlo cuando e
   - `/app` lista cielos reales del usuario
   - `POST /api/skies` crea cielo privado + membership `owner`
   - `/app/cielos/[skyId]` valida membresia activa server-side
-- Stars runtime minimo ya implementado:
-  - read
-  - create texto-only
-  - edit texto-only
-  - soft-delete
+  - `/app/legacy` redirige al cielo legacy
+- Stars runtime completo:
+  - read, create, edit, soft-delete
+  - canvas visual con SkyEngine (nebula, twinkling, estrellas atmosfericas)
+  - coordenadas persistentes y drag-and-drop
+  - imagenes por estrella (Firebase Storage + fallback Cloudinary)
+  - realtime via Firestore onSnapshot
+- Invitaciones implementadas:
+  - owner genera enlace copiable (token unico, 7 dias)
+  - pagina publica `/invite/[token]` con preview
+  - panel de colaboradores con miembros y pendientes
+  - revocacion transaccional
 - Pendiente actual:
-  - coordenadas y posicionamiento
-  - editor/canvas
-  - media con Firebase Storage
-  - invitaciones estandar y onboarding
+  - presence/cursores (Realtime Database)
+  - mejoras de onboarding
+  - optimizaciones de producto
 - Legacy:
   - `shared-legacy-v1` ya fue importado y validado
   - el cielo legacy ya tiene ownership directa
-  - claim legacy ya no es frente activo del producto
-  - el tooling legacy aun existe como compat temporal para Fase 3
+  - claim legacy superado, no es frente activo
+  - Fase 3 archivada: tooling conservado solo como archivo historico
 
 ## 3. Reglas operativas
 
@@ -58,12 +64,10 @@ Codex no debe editar ni ejecutar cambios por defecto. Solo debe hacerlo cuando e
 - `npm run build`
 - `npm run lint`
 - `npm run typecheck`
-- Tooling legacy disponible: `audit:*`, `migrate:*`, `validate:migration`
+- Tooling legacy (archivo historico, no tooling activo del modelo): `audit:*`, `migrate:*`, `validate:migration`
 
 ## 5. Prioridades actuales
 
-1. Coordenadas y posicionamiento de estrellas
-2. Editor/canvas del cielo
-3. Media runtime con Firebase Storage
-4. Invitaciones estandar y onboarding
-5. Fase 3 legacy despues, no ahora
+1. Presence/cursores (Realtime Database)
+2. Mejoras de onboarding
+3. Optimizaciones de producto

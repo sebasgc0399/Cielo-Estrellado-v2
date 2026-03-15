@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth/getSessionUser'
 import { adminDb } from '@/lib/firebase/admin'
 import type { SkyRecord, MemberRecord } from '@/domain/contracts'
-import { DEFAULT_SKY_PERSONALIZATION } from '@/domain/shared-legacy'
+import { DEFAULT_SKY_PERSONALIZATION } from '@/domain/contracts'
 
 export async function POST(request: Request) {
   try {
