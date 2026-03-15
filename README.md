@@ -31,6 +31,7 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
   - click/tap en espacio vacio del canvas abre el create form con coordenadas precargadas
   - render de imagen por estrella: imagePath (Firebase Storage) con fallback a legacyUrl (Cloudinary)
   - attach de primera imagen desde el edit form cuando la estrella no tiene imagen Storage
+  - actualizacion en tiempo real via Firestore onSnapshot: carga inicial SSR + suscripcion en vivo; cambios de cualquier colaborador se reflejan sin recargar la pagina
 - Invitaciones implementadas en `/app/cielos/[skyId]`:
   - owner genera un enlace copiable (token unico, 7 dias de vigencia)
   - pagina publica `/invite/[token]` con preview del cielo y rol asignado
@@ -42,9 +43,6 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
   - revocacion de invitaciones pendientes (transaccional, con manejo de race conditions)
   - generacion de nuevos enlaces de invitacion integrada en el mismo panel
 - Onboarding minimo: estado vacio en `/app` con CTA "Crear mi primer cielo"
-- Pendiente actual:
-  - realtime mas adelante
-
 ## Estado legacy
 
 - El dataset legacy ya fue importado y validado en `masmelito-f209c`.
@@ -104,8 +102,8 @@ Notas:
 
 ## Siguiente frente
 
-Orden recomendado:
+Realtime de stars en `/app/cielos/[skyId]` ya implementado (Firestore onSnapshot).
 
-1. Realtime
+Proximos frentes por definir: presence/cursores (Realtime Database), mejoras de onboarding, optimizaciones de producto.
 
 Documento principal de decisiones: `docs/documento-maestro-cielo-estrellado.md`

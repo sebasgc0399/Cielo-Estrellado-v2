@@ -3,9 +3,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import type { SkyRecord, MemberRecord, MemberRole, SkySource, StarRecord } from '@/domain/contracts'
 import type { StarEntry } from '@/lib/skies/getSkyStars'
 import type { UserStar } from '@/engine/SkyEngine'
+import { firebaseFirestore } from '@/lib/firebase/client'
+import { useAuth } from '@/lib/auth/AuthContext'
 import { SkyCanvasPreview } from './SkyCanvasPreview'
 import { StarImage } from '@/components/StarImage'
 import { CollaboratorsPanel } from './CollaboratorsPanel'
@@ -17,7 +20,7 @@ interface SkyDetailContentProps {
   sky: SkyRecord
   member: MemberRecord
   userId: string
-  stars: StarEntry[]
+  initialStars: StarEntry[]
   starsError: string | null
   canCreate: boolean
 }
@@ -38,11 +41,21 @@ export function SkyDetailContent({
   sky,
   member,
   userId,
-  stars,
+  initialStars,
   starsError,
   canCreate,
 }: SkyDetailContentProps) {
   const router = useRouter()
+  const { user: authUser, loading: authLoading } = useAuth()
+
+  const [stars, setStars] = useState<StarEntry[]>(initialStars)
+  const [realtimeReady, setRealtimeReady] = useState(false)
+  const realtimeReadyRef = useRef(false)
+
+  function setRR(value: boolean) {
+    realtimeReadyRef.current = value
+    setRealtimeReady(value)
+  }
 
   const [isCreating, setIsCreating] = useState(false)
   const [title, setTitle] = useState('')
@@ -98,6 +111,48 @@ export function SkyDetailContent({
       createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
   }, [isCreating, createX])
+
+  // Suscripcion realtime — se monta solo cuando Firebase Auth cliente esta listo y el uid coincide
+  useEffect(() => {
+    setRR(false) // reset siempre al inicio, antes de cualquier early return
+
+    if (authLoading) return
+    if (!authUser || authUser.uid !== userId) return
+
+    const q = query(
+      collection(firebaseFirestore, 'skies', skyId, 'stars'),
+      orderBy('createdAt', 'desc'),
+    )
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const entries: StarEntry[] = []
+        for (const doc of snapshot.docs) {
+          const star = doc.data() as StarRecord
+          if (star.deletedAt === null) entries.push({ starId: doc.id, star })
+        }
+        setStars(entries)
+        setRR(true)
+      },
+      (error) => {
+        setRR(false)
+        console.error('[onSnapshot] stars error:', error.code)
+      },
+    )
+    return unsub
+  }, [skyId, authUser, authLoading, userId])
+
+  // Safety guard: si la estrella en edicion desaparece del snapshot (borrada por otro), cerrar el form
+  useEffect(() => {
+    if (!editingStarId) return
+    if (stars.some(e => e.starId === editingStarId)) return
+    setEditingStarId(null)
+    if (editImagePreviewUrl) {
+      URL.revokeObjectURL(editImagePreviewUrl)
+      setEditImageFile(null)
+      setEditImagePreviewUrl(null)
+    }
+  }, [stars, editingStarId, editImagePreviewUrl])
 
   const userStars: UserStar[] = useMemo(
     () =>
@@ -164,13 +219,13 @@ export function SkyDetailContent({
         }),
       })
       if (!res.ok) {
-        router.refresh()
+        if (!realtimeReadyRef.current) router.refresh()
         return false
       }
-      router.refresh()
+      if (!realtimeReadyRef.current) router.refresh()
       return true
     } catch {
-      router.refresh()
+      if (!realtimeReadyRef.current) router.refresh()
       return false
     } finally {
       setIsCommitting(false)
@@ -297,7 +352,7 @@ export function SkyDetailContent({
       setMessage('')
       setCreateX(null)
       setCreateY(null)
-      router.refresh()
+      if (!realtimeReadyRef.current) router.refresh()
     } catch {
       setError('No se pudo conectar con el servidor')
     } finally {
@@ -376,7 +431,7 @@ export function SkyDetailContent({
       setEditMessage('')
       setEditX(null)
       setEditY(null)
-      router.refresh()
+      if (!realtimeReadyRef.current) router.refresh()
     } catch {
       setEditError('No se pudo conectar con el servidor')
     } finally {
@@ -407,7 +462,7 @@ export function SkyDetailContent({
         return
       }
       setDeletingStarId(null)
-      router.refresh()
+      if (!realtimeReadyRef.current) router.refresh()
     } catch {
       setDeleteError('No se pudo conectar con el servidor')
     } finally {
@@ -694,7 +749,7 @@ export function SkyDetailContent({
   }
 
   function renderStarsContent() {
-    if (starsError) {
+    if (starsError && !realtimeReady) {
       return (
         <div className={styles.errorState} role="alert">
           <span className={styles.errorIcon} aria-hidden="true">!</span>
@@ -873,7 +928,7 @@ export function SkyDetailContent({
 
       <section className={styles.starsSection}>
         <h2 className={styles.sectionLabel}>
-          Estrellas{!starsError && stars.length > 0 ? ` (${stars.length})` : ''}
+          Estrellas{stars.length > 0 ? ` (${stars.length})` : ''}
         </h2>
         <SkyCanvasPreview
           userStars={userStars}

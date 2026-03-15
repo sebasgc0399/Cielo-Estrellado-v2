@@ -34,7 +34,7 @@ export default async function SkyDetailPage({ params }: Props) {
       sky={sky}
       member={member}
       userId={user.uid}
-      stars={starsResult.ok ? starsResult.stars : []}
+      initialStars={starsResult.ok ? starsResult.stars : []}
       starsError={starsResult.ok ? null : starsResult.error}
       canCreate={canCreate}
     />
