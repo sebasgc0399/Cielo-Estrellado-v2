@@ -195,3 +195,16 @@ Current sequence should be:
 4. Keep migration validation tooling available for operational checks and re-run real migration only if a concrete operational need appears and backup requirements are met
 
 For full product, data, and roadmap context, use `docs/documento-maestro-cielo-estrellado.md` as the main decision document.
+
+## 9. MCP Servers Available in Claude Code
+
+The following MCP servers are configured in `.mcp.json` and available in Claude Code for this project. Use them proactively when relevant instead of writing scripts or manual queries.
+
+| Server | Cuándo usarlo |
+|---|---|
+| `firebase` | Leer/escribir Firestore, consultar colecciones, verificar el entorno Firebase, obtener reglas de seguridad. Proyecto activo: `masmelito-f209c`. |
+| `magicuidesign-mcp` | Buscar y obtener componentes animados de Magic UI (208 componentes: beams, particles, text effects, etc.) para UI premium. |
+| `shadcn` | Buscar y agregar componentes de shadcn/ui al proyecto. Registry activo: `@shadcn`. |
+| `frontend-design` (plugin) | Diseñar y generar interfaces frontend de alta calidad con criterio visual. |
+
+**Regla de uso:** Antes de crear un componente UI desde cero, revisar si Magic UI o shadcn ya tienen algo equivalente o adaptable. Antes de consultar Firestore con scripts, usar el MCP de Firebase directamente.
