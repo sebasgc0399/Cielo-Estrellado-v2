@@ -31,8 +31,14 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
   - click/tap en espacio vacio del canvas abre el create form con coordenadas precargadas
   - render de imagen por estrella: imagePath (Firebase Storage) con fallback a legacyUrl (Cloudinary)
   - attach de primera imagen desde el edit form cuando la estrella no tiene imagen Storage
+- Invitaciones implementadas en `/app/cielos/[skyId]`:
+  - owner genera un enlace copiable (token unico, 7 dias de vigencia)
+  - pagina publica `/invite/[token]` con preview del cielo y rol asignado
+  - flujo logged-out: preview → login → volver al invite → aceptar
+  - aceptacion crea membresia activa; invite queda marcado como `accepted`
+- Onboarding minimo: estado vacio en `/app` con CTA "Crear mi primer cielo"
 - Pendiente actual:
-  - invitaciones estandar y onboarding
+  - panel de miembros y revocacion de invitaciones
   - realtime mas adelante
 
 ## Estado legacy
@@ -96,7 +102,7 @@ Notas:
 
 Orden recomendado:
 
-1. Invitaciones estandar y onboarding
+1. Panel de miembros y revocacion de invitaciones
 2. Realtime mas adelante
 
 Documento principal de decisiones: `docs/documento-maestro-cielo-estrellado.md`

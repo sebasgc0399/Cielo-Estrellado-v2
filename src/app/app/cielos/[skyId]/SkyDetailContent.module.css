@@ -638,3 +638,47 @@
 .imageAttachInput {
   display: none;
 }
+
+/* ── Invite section ── */
+.inviteSection {
+  margin-top: 20px;
+}
+
+.invitePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: var(--panel-bg);
+  border: 1px solid rgba(143, 211, 255, 0.15);
+  backdrop-filter: blur(10px);
+  max-width: 480px;
+}
+
+.invitePanelLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.inviteUrlText {
+  font-size: 0.75rem;
+  color: rgba(180, 220, 255, 0.8);
+  margin: 0;
+  word-break: break-all;
+  font-family: 'Courier New', monospace;
+  background: rgba(143, 211, 255, 0.04);
+  border: 1px solid rgba(143, 211, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 10px;
+  line-height: 1.4;
+}
+
+.inviteActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
