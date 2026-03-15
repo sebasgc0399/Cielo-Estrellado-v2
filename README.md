@@ -36,9 +36,13 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
   - pagina publica `/invite/[token]` con preview del cielo y rol asignado
   - flujo logged-out: preview → login → volver al invite → aceptar
   - aceptacion crea membresia activa; invite queda marcado como `accepted`
+- Panel de colaboradores en `/app/cielos/[skyId]` (solo owner):
+  - lista de miembros activos con nombre, email y rol
+  - lista de invitaciones pendientes (no expiradas) con fecha de expiracion
+  - revocacion de invitaciones pendientes (transaccional, con manejo de race conditions)
+  - generacion de nuevos enlaces de invitacion integrada en el mismo panel
 - Onboarding minimo: estado vacio en `/app` con CTA "Crear mi primer cielo"
 - Pendiente actual:
-  - panel de miembros y revocacion de invitaciones
   - realtime mas adelante
 
 ## Estado legacy
@@ -96,13 +100,12 @@ Notas:
 
 - `FIREBASE_SERVICE_ACCOUNT_PATH` apunta a un JSON local y no debe versionarse.
 - Cloudinary solo es necesario para auditoria y migracion legacy.
-- `firestore.indexes.json` versiona el indice requerido para `collectionGroup('members')`.
+- `firestore.indexes.json` versiona los indices requeridos para `collectionGroup('members')` y la coleccion `invites`.
 
 ## Siguiente frente
 
 Orden recomendado:
 
-1. Panel de miembros y revocacion de invitaciones
-2. Realtime mas adelante
+1. Realtime
 
 Documento principal de decisiones: `docs/documento-maestro-cielo-estrellado.md`

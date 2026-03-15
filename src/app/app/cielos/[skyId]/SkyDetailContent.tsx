@@ -8,6 +8,7 @@ import type { StarEntry } from '@/lib/skies/getSkyStars'
 import type { UserStar } from '@/engine/SkyEngine'
 import { SkyCanvasPreview } from './SkyCanvasPreview'
 import { StarImage } from '@/components/StarImage'
+import { CollaboratorsPanel } from './CollaboratorsPanel'
 import { uploadStarImage } from '@/lib/firebase/storage'
 import styles from './SkyDetailContent.module.css'
 
@@ -71,48 +72,7 @@ export function SkyDetailContent({
   const [flashingStarId, setFlashingStarId] = useState<string | null>(null)
   const [isCommitting, setIsCommitting] = useState(false)
 
-  const [inviteOpen, setInviteOpen] = useState(false)
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
-  const [inviteGenerating, setInviteGenerating] = useState(false)
-  const [inviteError, setInviteError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-
   const createFormRef = useRef<HTMLDivElement | null>(null)
-
-  async function handleGenerateInvite() {
-    if (inviteGenerating) return
-    setInviteGenerating(true)
-    setInviteError(null)
-    try {
-      const res = await fetch(`/api/skies/${skyId}/invites`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'editor' }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok) {
-        setInviteError(data?.error || 'Error al generar la invitación')
-        return
-      }
-      setInviteUrl(data.inviteUrl)
-      setInviteOpen(true)
-    } catch {
-      setInviteError('No se pudo conectar con el servidor')
-    } finally {
-      setInviteGenerating(false)
-    }
-  }
-
-  async function handleCopyInvite() {
-    if (!inviteUrl) return
-    try {
-      await navigator.clipboard.writeText(inviteUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // fallback: select the text manually
-    }
-  }
 
   function clearEditImageState() {
     if (editImagePreviewUrl) URL.revokeObjectURL(editImagePreviewUrl)
@@ -907,51 +867,7 @@ export function SkyDetailContent({
         </p>
 
         {member.role === 'owner' && (
-          <div className={styles.inviteSection}>
-            {inviteOpen && inviteUrl ? (
-              <div className={styles.invitePanel}>
-                <p className={styles.invitePanelLabel}>Enlace de invitación (7 días)</p>
-                <p className={styles.inviteUrlText}>{inviteUrl}</p>
-                {inviteError && <p className={styles.errorMsg}>{inviteError}</p>}
-                <div className={styles.inviteActions}>
-                  <button
-                    className={styles.ctaBtnEnabled}
-                    onClick={handleCopyInvite}
-                    type="button"
-                  >
-                    {copied ? 'Copiado' : 'Copiar enlace'}
-                  </button>
-                  <button
-                    className={styles.cancelBtn}
-                    onClick={() => { setInviteOpen(false); setInviteUrl(null); setInviteError(null) }}
-                    type="button"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-                <button
-                  className={styles.secondaryBtn}
-                  onClick={handleGenerateInvite}
-                  disabled={inviteGenerating}
-                  type="button"
-                >
-                  {inviteGenerating ? 'Generando…' : 'Nuevo enlace'}
-                </button>
-              </div>
-            ) : (
-              <>
-                <button
-                  className={styles.secondaryBtn}
-                  onClick={handleGenerateInvite}
-                  disabled={inviteGenerating}
-                  type="button"
-                >
-                  {inviteGenerating ? 'Generando…' : 'Invitar personas'}
-                </button>
-                {inviteError && <p className={styles.errorMsg}>{inviteError}</p>}
-              </>
-            )}
-          </div>
+          <CollaboratorsPanel skyId={skyId} currentUserId={userId} />
         )}
       </section>
 
