@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { SkyRecord, MemberRecord, MemberRole, SkySource, StarRecord } from '@/domain/contracts'
 import type { StarEntry } from '@/lib/skies/getSkyStars'
-import { SkyPreview } from './SkyPreview'
+import type { UserStar } from '@/engine/SkyEngine'
+import { SkyCanvasPreview } from './SkyCanvasPreview'
 import styles from './SkyDetailContent.module.css'
 
 interface SkyDetailContentProps {
@@ -60,6 +61,34 @@ export function SkyDetailContent({
   const [deletingStarId, setDeletingStarId] = useState<string | null>(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const [flashingStarId, setFlashingStarId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!flashingStarId) return
+    const timer = setTimeout(() => setFlashingStarId(null), 800)
+    return () => clearTimeout(timer)
+  }, [flashingStarId])
+
+  const userStars: UserStar[] = useMemo(
+    () =>
+      stars
+        .filter(e => e.star.xNormalized != null && e.star.yNormalized != null)
+        .map(e => ({
+          id: e.starId,
+          x: e.star.xNormalized!,
+          y: e.star.yNormalized!,
+        })),
+    [stars],
+  )
+
+  function handleStarClick(starId: string) {
+    const el = document.getElementById(`star-${starId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+    setFlashingStarId(starId)
+  }
 
   function canEditStar(star: StarRecord): boolean {
     return (
@@ -146,6 +175,10 @@ export function SkyDetailContent({
       setError('El mensaje no puede superar 2000 caracteres')
       return
     }
+    if ((createX !== null) !== (createY !== null)) {
+      setError('Completa ambas coordenadas o quita la posicion')
+      return
+    }
 
     setIsSubmitting(true)
     setError(null)
@@ -207,6 +240,10 @@ export function SkyDetailContent({
     const trimmedMessage = editMessage.trim()
     if (trimmedMessage.length > 2000) {
       setEditError('El mensaje no puede superar 2000 caracteres')
+      return
+    }
+    if ((editX !== null) !== (editY !== null)) {
+      setEditError('Completa ambas coordenadas o quita la posicion')
       return
     }
 
@@ -299,6 +336,46 @@ export function SkyDetailContent({
           disabled={isSubmitting}
           maxLength={2000}
         />
+        <div className={styles.coordRow}>
+          <label className={styles.coordLabel}>
+            X%
+            <input
+              type="number"
+              className={styles.coordInput}
+              min={0}
+              max={100}
+              step={1}
+              value={createX !== null ? Math.round(createX * 100) : ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') { setCreateX(null); return }
+                const v = Number(raw)
+                if (!Number.isNaN(v)) setCreateX(Math.min(100, Math.max(0, v)) / 100)
+              }}
+              disabled={isSubmitting}
+              placeholder="—"
+            />
+          </label>
+          <label className={styles.coordLabel}>
+            Y%
+            <input
+              type="number"
+              className={styles.coordInput}
+              min={0}
+              max={100}
+              step={1}
+              value={createY !== null ? Math.round(createY * 100) : ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') { setCreateY(null); return }
+                const v = Number(raw)
+                if (!Number.isNaN(v)) setCreateY(Math.min(100, Math.max(0, v)) / 100)
+              }}
+              disabled={isSubmitting}
+              placeholder="—"
+            />
+          </label>
+        </div>
         <p className={styles.coordinateHint}>
           {createX !== null && createY !== null ? (
             <>
@@ -312,8 +389,10 @@ export function SkyDetailContent({
                 Quitar
               </button>
             </>
+          ) : (createX !== null || createY !== null) ? (
+            'Completa ambas coordenadas o quita la posicion'
           ) : (
-            'Sin posicion — toca el cielo para ubicar'
+            'Sin posicion — usa el canvas o ingresa coordenadas'
           )}
         </p>
         {error && <p className={styles.errorMsg}>{error}</p>}
@@ -364,6 +443,46 @@ export function SkyDetailContent({
           disabled={editSubmitting}
           maxLength={2000}
         />
+        <div className={styles.coordRow}>
+          <label className={styles.coordLabel}>
+            X%
+            <input
+              type="number"
+              className={styles.coordInput}
+              min={0}
+              max={100}
+              step={1}
+              value={editX !== null ? Math.round(editX * 100) : ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') { setEditX(null); return }
+                const v = Number(raw)
+                if (!Number.isNaN(v)) setEditX(Math.min(100, Math.max(0, v)) / 100)
+              }}
+              disabled={editSubmitting}
+              placeholder="—"
+            />
+          </label>
+          <label className={styles.coordLabel}>
+            Y%
+            <input
+              type="number"
+              className={styles.coordInput}
+              min={0}
+              max={100}
+              step={1}
+              value={editY !== null ? Math.round(editY * 100) : ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') { setEditY(null); return }
+                const v = Number(raw)
+                if (!Number.isNaN(v)) setEditY(Math.min(100, Math.max(0, v)) / 100)
+              }}
+              disabled={editSubmitting}
+              placeholder="—"
+            />
+          </label>
+        </div>
         <p className={styles.coordinateHint}>
           {editX !== null && editY !== null ? (
             <>
@@ -377,8 +496,10 @@ export function SkyDetailContent({
                 Quitar
               </button>
             </>
+          ) : (editX !== null || editY !== null) ? (
+            'Completa ambas coordenadas o quita la posicion'
           ) : (
-            'Sin posicion — toca el cielo para ubicar'
+            'Sin posicion — usa el canvas o ingresa coordenadas'
           )}
         </p>
         {editError && <p className={styles.errorMsg}>{editError}</p>}
@@ -462,7 +583,7 @@ export function SkyDetailContent({
       <>
         <div className={styles.starList}>
           {stars.map((entry) => (
-            <div key={entry.starId} className={styles.starCard}>
+            <div key={entry.starId} id={`star-${entry.starId}`} className={`${styles.starCard} ${flashingStarId === entry.starId ? styles.starCardFlash : ''}`}>
               {editingStarId === entry.starId ? (
                 renderEditForm(entry.starId)
               ) : (
@@ -577,15 +698,16 @@ export function SkyDetailContent({
         <h2 className={styles.sectionLabel}>
           Estrellas{!starsError && stars.length > 0 ? ` (${stars.length})` : ''}
         </h2>
-        <SkyPreview
-          stars={stars}
+        <SkyCanvasPreview
+          userStars={userStars}
           pickingActive={isCreating || editingStarId !== null}
           selectedPosition={
             isCreating
               ? (createX !== null && createY !== null ? { x: createX, y: createY } : null)
               : (editX !== null && editY !== null ? { x: editX, y: editY } : null)
           }
-          onPick={(x, y) => {
+          onStarClick={handleStarClick}
+          onPick={(x: number, y: number) => {
             if (isCreating) { setCreateX(x); setCreateY(y) }
             else if (editingStarId) { setEditX(x); setEditY(y) }
           }}

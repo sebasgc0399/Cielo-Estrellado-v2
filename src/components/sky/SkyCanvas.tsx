@@ -3,18 +3,23 @@
 import { useEffect, useRef } from 'react'
 import type { PointerEvent } from 'react'
 import { SkyEngine } from '@/engine/SkyEngine'
-import type { SkyConfig } from '@/engine/SkyEngine'
+import type { SkyConfig, UserStar } from '@/engine/SkyEngine'
 import './SkyCanvas.css'
 
 type SkyCanvasProps = {
   config: SkyConfig
   onFps: (fps: number) => void
   gyroEnabled: boolean
+  userStars?: UserStar[]
+  onStarClick?: (starId: string) => void
+  onCanvasClick?: (x: number, y: number) => void
+  pickingActive?: boolean
+  touchMode?: 'full' | 'tap-only'
 }
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 
-const SkyCanvas = ({ config, onFps, gyroEnabled }: SkyCanvasProps) => {
+const SkyCanvas = ({ config, onFps, gyroEnabled, userStars, onStarClick, onCanvasClick, pickingActive, touchMode = 'full' }: SkyCanvasProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const farRef = useRef<HTMLCanvasElement | null>(null)
   const midRef = useRef<HTMLCanvasElement | null>(null)
@@ -22,6 +27,7 @@ const SkyCanvas = ({ config, onFps, gyroEnabled }: SkyCanvasProps) => {
   const nebulaRef = useRef<HTMLCanvasElement | null>(null)
   const fxRef = useRef<HTMLCanvasElement | null>(null)
   const engineRef = useRef<SkyEngine | null>(null)
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!farRef.current || !midRef.current || !nearRef.current || !nebulaRef.current || !fxRef.current) {
@@ -81,6 +87,15 @@ const SkyCanvas = ({ config, onFps, gyroEnabled }: SkyCanvasProps) => {
     }
   }, [config.motion])
 
+  useEffect(() => {
+    if (engineRef.current) {
+      engineRef.current.setUserStars(userStars ?? [])
+    }
+  }, [userStars])
+
+  const isTouchSuppressed = (event: PointerEvent<HTMLDivElement>) =>
+    touchMode === 'tap-only' && event.pointerType === 'touch'
+
   const updatePointer = (event: PointerEvent<HTMLDivElement>, active: boolean) => {
     const element = containerRef.current
     if (!element) return
@@ -95,21 +110,65 @@ const SkyCanvas = ({ config, onFps, gyroEnabled }: SkyCanvasProps) => {
     }
   }
 
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isTouchSuppressed(event)) {
+      updatePointer(event, true)
+    }
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (rect) {
+      pointerDownPos.current = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      }
+    }
+  }
+
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isTouchSuppressed(event)) {
+      updatePointer(event, false)
+    }
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect || !pointerDownPos.current) return
+
+    const upX = event.clientX - rect.left
+    const upY = event.clientY - rect.top
+    const dx = upX - pointerDownPos.current.x
+    const dy = upY - pointerDownPos.current.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    pointerDownPos.current = null
+
+    if (dist > 5) return
+
+    if (pickingActive && onCanvasClick) {
+      const nx = clamp(upX / rect.width, 0, 1)
+      const ny = clamp(upY / rect.height, 0, 1)
+      onCanvasClick(nx, ny)
+      return
+    }
+
+    const hitId = engineRef.current?.hitTest(upX, upY) ?? null
+    if (hitId && onStarClick) {
+      onStarClick(hitId)
+    }
+  }
+
   const handlePointerLeave = () => {
     engineRef.current?.setPointer(0, 0, false)
     if (config.motion === 'mouse') {
       engineRef.current?.setInputTarget(0, 0)
     }
+    pointerDownPos.current = null
   }
 
   return (
     <div
       className="sky-canvas"
       ref={containerRef}
-      onPointerDown={(event) => updatePointer(event, true)}
-      onPointerMove={(event) => updatePointer(event, true)}
-      onPointerUp={(event) => updatePointer(event, false)}
-      onPointerCancel={(event) => updatePointer(event, false)}
+      style={pickingActive ? { cursor: 'crosshair' } : undefined}
+      onPointerDown={handlePointerDown}
+      onPointerMove={(event) => { if (!isTouchSuppressed(event)) updatePointer(event, true) }}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={(event) => { if (!isTouchSuppressed(event)) updatePointer(event, false); pointerDownPos.current = null }}
       onPointerLeave={handlePointerLeave}
     >
       <canvas ref={nebulaRef} className="sky-layer" data-layer="nebula" aria-hidden="true" />

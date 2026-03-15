@@ -500,10 +500,71 @@
   opacity: 0.7;
 }
 
+/* ── Star card flash (canvas selection) ── */
+.starCardFlash {
+  animation: cardFlash 0.8s ease-out;
+}
+
+@keyframes cardFlash {
+  0% { border-color: rgba(143, 211, 255, 0.6); }
+  100% { border-color: var(--panel-border); }
+}
+
 /* ── Edit form (inside star card) ── */
 .editForm {
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
+}
+
+/* ── Coordinate inputs ── */
+.coordRow {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.coordLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.coordInput {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(143, 211, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e7edff;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+  -moz-appearance: textfield;
+}
+
+.coordInput::-webkit-outer-spin-button,
+.coordInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.coordInput::placeholder {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.coordInput:focus {
+  border-color: rgba(143, 211, 255, 0.4);
+}
+
+.coordInput:disabled {
+  opacity: 0.5;
 }

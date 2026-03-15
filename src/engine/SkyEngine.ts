@@ -9,6 +9,13 @@ export type SkyConfig = {
   motion: MotionMode
 }
 
+export type UserStar = {
+  id: string
+  x: number
+  y: number
+  highlighted?: boolean
+}
+
 type LayerName = 'far' | 'mid' | 'near'
 
 type LayerCanvases = {
@@ -54,6 +61,20 @@ type LayerSettings = {
   twinkleAmpMax: number
 }
 
+type InternalUserStar = {
+  id: string
+  highlighted: boolean
+  x: number
+  y: number
+  radius: number
+  baseAlpha: number
+  twinkleSpeed: number
+  twinklePhase: number
+  twinkleAmp: number
+  color: string
+  blur: number
+}
+
 type EngineOptions = {
   onFps?: (fps: number) => void
 }
@@ -85,6 +106,9 @@ export class SkyEngine {
   private nebulaTexture: HTMLCanvasElement | null = null
   private needsStars = true
   private needsNebula = true
+  private userStarDefs: UserStar[] = []
+  private userStarCache: InternalUserStar[] = []
+  private needsUserStars = false
   private onFps?: (fps: number) => void
 
   constructor(canvases: LayerCanvases, options: EngineOptions = {}) {
@@ -160,6 +184,33 @@ export class SkyEngine {
     } else {
       this.pointer.active = false
     }
+  }
+
+  setUserStars(stars: UserStar[]) {
+    this.userStarDefs = stars
+    this.needsUserStars = true
+  }
+
+  hitTest(clientX: number, clientY: number): string | null {
+    const nearParallax = this.layers.near.settings.parallax
+    const offsetX = this.inputCurrent.x * this.width * nearParallax
+    const offsetY = this.inputCurrent.y * this.height * nearParallax
+    const hitRadius = 20
+    let bestId: string | null = null
+    let bestDist = hitRadius
+
+    for (const us of this.userStarDefs) {
+      const starPx = us.x * this.width + offsetX
+      const starPy = us.y * this.height + offsetY
+      const dx = clientX - starPx
+      const dy = clientY - starPy
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < bestDist) {
+        bestDist = dist
+        bestId = us.id
+      }
+    }
+    return bestId
   }
 
   start() {
@@ -252,6 +303,23 @@ export class SkyEngine {
       })
     }
     return stars
+  }
+
+  private buildUserStar(us: UserStar): InternalUserStar {
+    const hl = us.highlighted ?? false
+    return {
+      id: us.id,
+      highlighted: hl,
+      x: us.x,
+      y: us.y,
+      radius: hl ? 3.2 : 2.2,
+      baseAlpha: hl ? 1.0 : 0.9,
+      twinkleSpeed: rand(0.35, 0.7),
+      twinklePhase: rand(0, Math.PI * 2),
+      twinkleAmp: hl ? 0.04 : 0.06,
+      color: hl ? 'rgb(255, 250, 235)' : 'rgb(255, 245, 225)',
+      blur: hl ? 4.0 : 3.0,
+    }
   }
 
   private ensureNebula() {
@@ -372,6 +440,34 @@ export class SkyEngine {
       ctx.restore()
       ctx.globalAlpha = 1
     })
+
+    if (this.userStarCache.length > 0) {
+      const nearCtx = this.layers.near.ctx
+      const nearParallax = this.layers.near.settings.parallax
+      const uOffsetX = this.inputCurrent.x * this.width * nearParallax
+      const uOffsetY = this.inputCurrent.y * this.height * nearParallax
+
+      nearCtx.save()
+      for (const us of this.userStarCache) {
+        const twinkle = this.config.twinkle
+          ? Math.sin(t * us.twinkleSpeed + us.twinklePhase)
+          : 0
+        const alpha = clamp(us.baseAlpha + twinkle * us.twinkleAmp, 0.08, 1)
+        const px = us.x * this.width + uOffsetX
+        const py = us.y * this.height + uOffsetY
+        if (px < -20 || py < -20 || px > this.width + 20 || py > this.height + 20) continue
+
+        nearCtx.shadowBlur = us.blur
+        nearCtx.shadowColor = 'rgba(255, 235, 200, 0.6)'
+        nearCtx.globalAlpha = alpha
+        nearCtx.fillStyle = us.color
+        nearCtx.beginPath()
+        nearCtx.arc(px, py, us.radius, 0, Math.PI * 2)
+        nearCtx.fill()
+      }
+      nearCtx.restore()
+      nearCtx.globalAlpha = 1
+    }
   }
 
   private renderEffects(dt: number, now: number) {
@@ -451,6 +547,10 @@ export class SkyEngine {
     if (this.needsStars && this.width && this.height) {
       this.rebuildStars()
       this.needsStars = false
+    }
+    if (this.needsUserStars) {
+      this.userStarCache = this.userStarDefs.map(us => this.buildUserStar(us))
+      this.needsUserStars = false
     }
     if (this.needsNebula && this.width && this.height) {
       this.nebulaTexture = null

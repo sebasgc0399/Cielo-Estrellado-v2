@@ -23,9 +23,12 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
   - creacion con coordenadas opcionales
   - edicion de titulo, mensaje y posicion
   - soft-delete
-  - preview visual simple con posicionamiento por click/tap
+  - canvas visual con motor SkyEngine (nebula, twinkling, estrellas atmosfericas)
+  - estrellas reales del usuario renderizadas en el canvas con coordenadas persistentes
+  - seleccion de estrellas en canvas con scroll a card
+  - picker de coordenadas integrado en el canvas durante create/edit, con inputs manuales como fallback accesible
 - Pendiente actual:
-  - editor/canvas completo (integracion SkyEngine)
+  - interaccion avanzada en canvas (drag-and-drop de estrellas, create directo)
   - media con Firebase Storage
   - invitaciones estandar y onboarding
   - realtime mas adelante
@@ -91,7 +94,7 @@ Notas:
 
 Orden recomendado:
 
-1. Editor/canvas del cielo (integracion SkyEngine con stars reales)
+1. Interaccion avanzada en canvas (drag-and-drop, create directo sobre lienzo)
 3. Media runtime con Firebase Storage
 4. Invitaciones estandar y onboarding
 
