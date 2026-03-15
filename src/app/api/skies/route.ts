@@ -40,8 +40,6 @@ export async function POST(request: Request) {
       source: 'native',
       importBatch: null,
       legacyCreatorKeys: [],
-      claimStatus: 'unclaimed',
-      claimedByUserIds: [],
       personalization: DEFAULT_SKY_PERSONALIZATION,
       createdAt: now,
       updatedAt: now,
@@ -52,7 +50,6 @@ export async function POST(request: Request) {
       role: 'owner',
       status: 'active',
       invitedByUserId: null,
-      claimedLegacyCreatorKey: null,
       joinedAt: now,
     }
 

@@ -21,7 +21,6 @@ const roleLabels: Record<MemberRole, string> = {
   owner: 'Propietario',
   editor: 'Editor',
   viewer: 'Espectador',
-  legacy_claimant: 'Legacy',
 }
 
 const sourceLabels: Record<SkySource, string> = {

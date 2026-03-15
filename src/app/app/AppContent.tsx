@@ -138,7 +138,6 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
     owner: 'Propietario',
     editor: 'Editor',
     viewer: 'Espectador',
-    legacy_claimant: 'Legacy',
   }
 
   const loadErrorState = !skiesResult.ok ? getSkyLoadErrorState(skiesResult.error) : null

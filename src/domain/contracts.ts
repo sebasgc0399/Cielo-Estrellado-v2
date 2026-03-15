@@ -3,22 +3,14 @@
 export type IsoDateString = string
 
 export type SkySource = 'native' | 'legacy_import'
-export type SkyClaimStatus = 'unclaimed' | 'partially_claimed' | 'claimed' | 'disputed'
 export type SkyPrivacy = 'private'
-export type MemberRole = 'owner' | 'editor' | 'viewer' | 'legacy_claimant'
+export type MemberRole = 'owner' | 'editor' | 'viewer'
 export type MemberStatus = 'active' | 'revoked' | 'pending'
 export type UserStatus = 'active' | 'pending' | 'disabled'
 export type InviteRole = 'editor' | 'viewer'
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
 export type SkyTheme = 'classic' | 'romantic' | 'deep-night'
 export type SkyDensity = 'low' | 'medium' | 'high'
-export type ClaimReviewStatus =
-  | 'submitted'
-  | 'approved_partial'
-  | 'approved_final'
-  | 'rejected'
-  | 'revoked'
-  | 'disputed'
 
 export interface SkyPersonalization {
   theme: SkyTheme
@@ -49,8 +41,6 @@ export interface SkyRecord {
   source: SkySource
   importBatch: string | null
   legacyCreatorKeys: string[]
-  claimStatus: SkyClaimStatus
-  claimedByUserIds: string[]
   personalization: SkyPersonalization
   createdAt: IsoDateString
   updatedAt: IsoDateString
@@ -79,7 +69,6 @@ export interface MemberRecord {
   role: MemberRole
   status: MemberStatus
   invitedByUserId: string | null
-  claimedLegacyCreatorKey: string | null
   joinedAt: IsoDateString
 }
 
@@ -94,17 +83,3 @@ export interface InviteRecord {
   acceptedAt: IsoDateString | null
 }
 
-export interface LegacyClaimRecord {
-  claimKey: string
-  skyId: string
-  claimantUserId: string
-  legacyCreatorKey: string
-  status: ClaimReviewStatus
-  evidenceSummary: string
-  decisionReason: string | null
-  attemptCount: number
-  lastSubmittedAt: IsoDateString
-  submittedAt: IsoDateString
-  reviewedAt: IsoDateString | null
-  reviewedByUserId: string | null
-}
