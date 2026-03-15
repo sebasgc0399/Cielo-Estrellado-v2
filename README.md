@@ -29,8 +29,9 @@ Cielo Estrellado v4 es el relanzamiento del producto sobre Next.js 15 con App Ro
   - picker de coordenadas integrado en el canvas durante create/edit, con inputs manuales como fallback accesible
   - reposicionamiento de estrellas ya posicionadas por drag-and-drop en el canvas (mouse/trackpad/pen)
   - click/tap en espacio vacio del canvas abre el create form con coordenadas precargadas
+  - render de imagen por estrella: imagePath (Firebase Storage) con fallback a legacyUrl (Cloudinary)
+  - attach de primera imagen desde el edit form cuando la estrella no tiene imagen Storage
 - Pendiente actual:
-  - media con Firebase Storage
   - invitaciones estandar y onboarding
   - realtime mas adelante
 
@@ -95,7 +96,7 @@ Notas:
 
 Orden recomendado:
 
-1. Media runtime con Firebase Storage
-2. Invitaciones estandar y onboarding
+1. Invitaciones estandar y onboarding
+2. Realtime mas adelante
 
 Documento principal de decisiones: `docs/documento-maestro-cielo-estrellado.md`

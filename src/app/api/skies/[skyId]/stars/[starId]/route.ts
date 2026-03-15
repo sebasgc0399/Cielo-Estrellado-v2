@@ -60,6 +60,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       message?: unknown
       xNormalized?: unknown
       yNormalized?: unknown
+      imagePath?: unknown
     }
 
     const rawTitle = typeof body.title === 'string' ? body.title.trim() : ''
@@ -126,24 +127,62 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       }
     }
 
+    // imagePath — attach-only: solo cuando la estrella no tiene imagen Storage
+    let newImagePath: string | null | undefined = undefined // undefined = no viene en body
+    if ('imagePath' in body) {
+      if (body.imagePath === null) {
+        // Future-proofing para "quitar imagen" — no expuesto en UI en este corte
+        newImagePath = null
+      } else if (typeof body.imagePath === 'string') {
+        const canonicalPath = `stars/${skyId}/${starId}/image`
+        if (body.imagePath !== canonicalPath) {
+          return NextResponse.json(
+            { error: 'imagePath no válido' },
+            { status: 400 },
+          )
+        }
+        if (star.imagePath !== null) {
+          return NextResponse.json(
+            { error: 'La estrella ya tiene una imagen' },
+            { status: 409 },
+          )
+        }
+        newImagePath = body.imagePath
+      } else {
+        return NextResponse.json(
+          { error: 'imagePath debe ser una cadena o null' },
+          { status: 400 },
+        )
+      }
+    }
+
+    // Early return if nothing changed
+    const imagePathChanged = newImagePath !== undefined && newImagePath !== star.imagePath
     if (
       rawTitle === star.title &&
       newMessage === star.message &&
       parsedX === star.xNormalized &&
-      parsedY === star.yNormalized
+      parsedY === star.yNormalized &&
+      !imagePathChanged
     ) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
     const now = new Date().toISOString()
-    await starRef.update({
+    const updatePayload: Record<string, unknown> = {
       title: rawTitle,
       message: newMessage,
       xNormalized: parsedX,
       yNormalized: parsedY,
       updatedAt: now,
       updatedByUserId: user.uid,
-    })
+    }
+
+    if (newImagePath !== undefined) {
+      updatePayload.imagePath = newImagePath
+    }
+
+    await starRef.update(updatePayload)
 
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (error) {

@@ -7,6 +7,8 @@ import type { SkyRecord, MemberRecord, MemberRole, SkySource, StarRecord } from 
 import type { StarEntry } from '@/lib/skies/getSkyStars'
 import type { UserStar } from '@/engine/SkyEngine'
 import { SkyCanvasPreview } from './SkyCanvasPreview'
+import { StarImage } from '@/components/StarImage'
+import { uploadStarImage } from '@/lib/firebase/storage'
 import styles from './SkyDetailContent.module.css'
 
 interface SkyDetailContentProps {
@@ -58,6 +60,10 @@ export function SkyDetailContent({
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
+  const [editImageFile, setEditImageFile] = useState<File | null>(null)
+  const [editImagePreviewUrl, setEditImagePreviewUrl] = useState<string | null>(null)
+  const [editImageError, setEditImageError] = useState<string | null>(null)
+
   const [deletingStarId, setDeletingStarId] = useState<string | null>(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -66,6 +72,19 @@ export function SkyDetailContent({
   const [isCommitting, setIsCommitting] = useState(false)
 
   const createFormRef = useRef<HTMLDivElement | null>(null)
+
+  function clearEditImageState() {
+    if (editImagePreviewUrl) URL.revokeObjectURL(editImagePreviewUrl)
+    setEditImageFile(null)
+    setEditImagePreviewUrl(null)
+    setEditImageError(null)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (editImagePreviewUrl) URL.revokeObjectURL(editImagePreviewUrl)
+    }
+  }, [editImagePreviewUrl])
 
   useEffect(() => {
     if (!flashingStarId) return
@@ -163,6 +182,7 @@ export function SkyDetailContent({
 
   function openCreate(initialX?: number, initialY?: number) {
     if (isSubmitting || editSubmitting || deleteSubmitting) return
+    clearEditImageState()
     setEditingStarId(null)
     setEditTitle('')
     setEditMessage('')
@@ -185,6 +205,7 @@ export function SkyDetailContent({
 
   function openEdit(entry: StarEntry) {
     if (isSubmitting || editSubmitting || deleteSubmitting) return
+    clearEditImageState()
     setIsCreating(false)
     setTitle('')
     setMessage('')
@@ -203,6 +224,7 @@ export function SkyDetailContent({
 
   function openDelete(starId: string) {
     if (isSubmitting || editSubmitting || deleteSubmitting) return
+    clearEditImageState()
     setIsCreating(false)
     setTitle('')
     setMessage('')
@@ -315,15 +337,30 @@ export function SkyDetailContent({
     setEditError(null)
 
     try {
+      let uploadedPath: string | undefined
+      if (editImageFile) {
+        try {
+          uploadedPath = await uploadStarImage(skyId, starId, editImageFile)
+        } catch {
+          setEditError('Error al subir la imagen')
+          return
+        }
+      }
+
+      const patchBody: Record<string, unknown> = {
+        title: trimmedTitle,
+        message: trimmedMessage || undefined,
+        xNormalized: editX,
+        yNormalized: editY,
+      }
+      if (uploadedPath !== undefined) {
+        patchBody.imagePath = uploadedPath
+      }
+
       const res = await fetch(`/api/skies/${skyId}/stars/${starId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: trimmedTitle,
-          message: trimmedMessage || undefined,
-          xNormalized: editX,
-          yNormalized: editY,
-        }),
+        body: JSON.stringify(patchBody),
       })
 
       if (!res.ok) {
@@ -332,6 +369,7 @@ export function SkyDetailContent({
         return
       }
 
+      clearEditImageState()
       setEditingStarId(null)
       setEditTitle('')
       setEditMessage('')
@@ -346,6 +384,7 @@ export function SkyDetailContent({
   }
 
   function handleEditCancel() {
+    clearEditImageState()
     setEditingStarId(null)
     setEditTitle('')
     setEditMessage('')
@@ -483,8 +522,70 @@ export function SkyDetailContent({
   }
 
   function renderEditForm(starId: string) {
+    const editingEntry = stars.find(e => e.starId === starId)
+    const star = editingEntry?.star
+    const hasStorageImage = !!star?.imagePath
+
     return (
       <div className={styles.editForm}>
+        {star && (
+          <div className={styles.imageSection}>
+            {hasStorageImage ? (
+              <StarImage
+                imagePath={star.imagePath}
+                legacyUrl={star.legacyUrl}
+                className={styles.editImagePreview}
+              />
+            ) : (
+              <>
+                {star.legacyUrl && !editImagePreviewUrl && (
+                  <StarImage
+                    imagePath={null}
+                    legacyUrl={star.legacyUrl}
+                    className={styles.editImagePreview}
+                  />
+                )}
+                {editImagePreviewUrl && (
+                  <div className={styles.editImageWrapper}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={editImagePreviewUrl}
+                      alt=""
+                      className={styles.editImagePreview}
+                    />
+                    <span className={styles.editImageBadge}>Sin guardar</span>
+                  </div>
+                )}
+                <label className={styles.imageAttachLabel}>
+                  {editImagePreviewUrl ? 'Cambiar imagen' : 'Agregar imagen'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className={styles.imageAttachInput}
+                    disabled={editSubmitting}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 5 * 1024 * 1024) {
+                        setEditImageError('La imagen no puede superar 5 MB')
+                        return
+                      }
+                      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                        setEditImageError('Solo se permiten imágenes JPEG, PNG o WebP')
+                        return
+                      }
+                      if (editImagePreviewUrl) URL.revokeObjectURL(editImagePreviewUrl)
+                      setEditImageFile(file)
+                      setEditImagePreviewUrl(URL.createObjectURL(file))
+                      setEditImageError(null)
+                    }}
+                  />
+                </label>
+                {editImageError && <p className={styles.errorMsg}>{editImageError}</p>}
+              </>
+            )}
+          </div>
+        )}
         <input
           type="text"
           className={styles.titleInput}
@@ -574,7 +675,9 @@ export function SkyDetailContent({
             disabled={editSubmitting}
             type="button"
           >
-            {editSubmitting ? 'Guardando…' : 'Guardar'}
+            {editSubmitting
+              ? editImageFile ? 'Subiendo imagen…' : 'Guardando…'
+              : 'Guardar'}
           </button>
           <button
             className={styles.cancelBtn}
@@ -652,6 +755,11 @@ export function SkyDetailContent({
                 renderEditForm(entry.starId)
               ) : (
                 <>
+                  <StarImage
+                    imagePath={entry.star.imagePath}
+                    legacyUrl={entry.star.legacyUrl}
+                    className={styles.starThumbnail}
+                  />
                   <p className={styles.starTitle}>
                     {entry.star.title || 'Sin titulo'}
                   </p>

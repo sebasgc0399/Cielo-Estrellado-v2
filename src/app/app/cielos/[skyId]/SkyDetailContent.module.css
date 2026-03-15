@@ -568,3 +568,73 @@
 .coordInput:disabled {
   opacity: 0.5;
 }
+
+/* ── Star thumbnail (card) ── */
+.starThumbnail {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* ── Image section (edit form) ── */
+.imageSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editImageWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.editImagePreview {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.editImageBadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(143, 211, 255, 0.15);
+  border: 1px solid rgba(143, 211, 255, 0.3);
+  color: rgba(200, 230, 255, 0.9);
+  backdrop-filter: blur(4px);
+}
+
+.imageAttachLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid rgba(143, 211, 255, 0.2);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.imageAttachLabel:hover {
+  border-color: rgba(143, 211, 255, 0.4);
+  color: var(--accent);
+}
+
+.imageAttachInput {
+  display: none;
+}
