@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { SessionUser } from '@/lib/auth/types'
 import type { GetUserSkiesResult } from '@/lib/skies/getUserSkies'
-import { SHARED_LEGACY_SKY_ID } from '@/domain/shared-legacy'
 import styles from './page.module.css'
 
 interface AppContentProps {
@@ -242,19 +241,6 @@ export function AppContent({ user, skiesResult }: AppContentProps) {
         )}
       </section>
 
-      {skiesResult.ok && skiesResult.skies.some(e => e.skyId === SHARED_LEGACY_SKY_ID) && (
-        <section className={styles.section}>
-          <div className={styles.legacyCard}>
-            <span className={styles.legacyCardLabel}>Cielo heredado</span>
-            <p className={styles.legacyCardText}>
-              Tu cielo heredado ya esta disponible con todas las estrellas del sistema anterior.
-            </p>
-            <Link href={`/app/cielos/${SHARED_LEGACY_SKY_ID}`} className={styles.legacyCardBtn}>
-              Ver cielo heredado
-            </Link>
-          </div>
-        </section>
-      )}
     </div>
   )
 }

@@ -9,7 +9,6 @@ Claude Code planifica o implementa segun el prompt recibido.
 Reglas base:
 
 - respetar el alcance exacto del prompt
-- no reabrir migracion, claim o limpieza legacy si no estan en scope
 - no mezclar fases distintas en un mismo corte sin necesidad real
 
 ## 2. Snapshot del repo
@@ -23,12 +22,11 @@ Reglas base:
   - `/app` lista cielos reales del usuario
   - `POST /api/skies` crea cielo privado + membership `owner`
   - `/app/cielos/[skyId]` valida membresia activa server-side
-  - `/app/legacy` redirige al cielo legacy
 - Stars runtime completo:
   - read, create, edit, soft-delete
   - canvas visual con SkyEngine (nebula, twinkling, estrellas atmosfericas)
   - coordenadas persistentes y drag-and-drop
-  - imagenes por estrella (Firebase Storage + fallback Cloudinary)
+  - imagenes por estrella (Firebase Storage)
   - realtime via Firestore onSnapshot
 - Invitaciones implementadas:
   - owner genera enlace copiable (token unico, 7 dias)
@@ -39,11 +37,6 @@ Reglas base:
   - presence/cursores (Realtime Database)
   - mejoras de onboarding
   - optimizaciones de producto
-- Legacy:
-  - `shared-legacy-v1` ya fue importado y validado
-  - el cielo legacy ya tiene ownership directa
-  - claim legacy superado, no es frente activo
-  - Fase 3 archivada: tooling conservado solo como archivo historico
 
 ## 3. Reglas de trabajo
 
@@ -51,8 +44,6 @@ Reglas base:
 - mantener cambios pequenos, correctos y acotados al prompt
 - si cambia el runtime o el roadmap visible, mantener `README.md` alineado cuando corresponda
 - usar `docs/documento-maestro-cielo-estrellado.md` para decisiones de producto, arquitectura y migracion
-- no tocar scripts legacy salvo scope explicito
-- no reejecutar `migrate:* --execute` salvo evento operativo explicito
 
 ## 4. Comandos utiles
 
@@ -60,7 +51,6 @@ Reglas base:
 - `npm run build`
 - `npm run lint`
 - `npm run typecheck`
-- Tooling legacy (archivo historico, no tooling activo del modelo): `audit:*`, `migrate:*`, `validate:migration`
 
 ## 5. MCPs disponibles
 

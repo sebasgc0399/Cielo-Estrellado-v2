@@ -7,13 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit",
-    "audit:firestore": "tsx scripts/audit-firestore.ts",
-    "audit:cloudinary": "tsx scripts/audit-cloudinary.ts",
-    "audit:crossref": "tsx scripts/audit-crossref.ts",
-    "migrate:images": "tsx scripts/migrate-legacy-images.ts",
-    "migrate:stars": "tsx scripts/migrate-legacy-stars.ts",
-    "validate:migration": "tsx scripts/validate-legacy-migration.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "firebase": "^12.10.0",

@@ -7,11 +7,10 @@ import { firebaseStorage } from '@/lib/firebase/client'
 
 interface StarImageProps {
   imagePath: string | null
-  legacyUrl: string | null
   className?: string
 }
 
-export function StarImage({ imagePath, legacyUrl, className }: StarImageProps) {
+export function StarImage({ imagePath, className }: StarImageProps) {
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -31,17 +30,6 @@ export function StarImage({ imagePath, legacyUrl, className }: StarImageProps) {
     return (
       <img
         src={resolvedUrl}
-        alt=""
-        className={className}
-        loading="lazy"
-      />
-    )
-  }
-
-  if (legacyUrl) {
-    return (
-      <img
-        src={legacyUrl}
         alt=""
         className={className}
         loading="lazy"

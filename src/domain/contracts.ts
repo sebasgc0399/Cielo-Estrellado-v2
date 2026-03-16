@@ -2,7 +2,6 @@
 
 export type IsoDateString = string
 
-export type SkySource = 'native' | 'legacy_import'
 export type SkyPrivacy = 'private'
 export type MemberRole = 'owner' | 'editor' | 'viewer'
 export type MemberStatus = 'active' | 'revoked' | 'pending'
@@ -38,9 +37,6 @@ export interface SkyRecord {
   ownerUserId: string | null
   privacy: SkyPrivacy
   coverImagePath: string | null
-  source: SkySource
-  importBatch: string | null
-  legacyCreatorKeys: string[]
   personalization: SkyPersonalization
   createdAt: IsoDateString
   updatedAt: IsoDateString
@@ -50,14 +46,11 @@ export interface StarRecord {
   title: string | null
   message: string | null
   imagePath: string | null
-  legacyUrl: string | null
   xNormalized: number | null
   yNormalized: number | null
   year: number | null
   authorUserId: string | null
   updatedByUserId: string | null
-  legacyCreatorKey: string | null
-  legacyDocId: string | null
   createdAt: IsoDateString
   updatedAt: IsoDateString
   deletedAt: IsoDateString | null

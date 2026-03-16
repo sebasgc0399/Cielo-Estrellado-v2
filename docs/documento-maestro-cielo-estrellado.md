@@ -292,25 +292,18 @@ Politica operativa del MVP:
 
 - El rol de membresia y la autoria de estrella se modelan por separado.
 - La autoria de estrella protege el contenido frente a otros editores, pero no reemplaza la autoridad final del `owner`.
-- El estado transitorio `legacy_claimant` solo existe mientras un cielo legacy este en `partially_claimed`. (Superado: ver §11 decision 2026-03-14)
 - Todo borrado destructivo en MVP se implementa como `soft delete`.
-- Durante claim parcial, la comprobacion de autoria sobre estrellas legacy se resuelve con `member.claimedLegacyCreatorKey === star.legacyCreatorKey`. (Superado: ver §11 decision 2026-03-14)
-- Cuando un claim aprobado queda asociado a un `legacyCreatorKey`, esas estrellas pasan a resolverse como autoria logica de ese usuario para permisos de edicion. (Superado: ver §11 decision 2026-03-14)
 
 ### Matriz operativa de permisos
 
-> **[Superado 2026-03-14]** La columna `legacy_claimant` es trazabilidad histórica. El rol no está implementado en el runtime actual.
-
-| Accion | `owner` | `editor` | `viewer` | `legacy_claimant` |
-| --- | --- | --- | --- | --- |
-| Ver cielo y estrellas | Si | Si | Si | Si |
-| Crear estrella nueva | Si | Si | No | Si |
-| Editar, mover o reemplazar imagen de estrella nueva propia | Si | Si | No | Si |
-| Soft delete de estrella nueva propia | Si | Si | No | Si |
-| Editar, mover o reemplazar imagen de estrella legacy con `legacyCreatorKey` coincidente | Si | Si, solo como autor logico o `authorUserId` | No | Si, solo si `claimedLegacyCreatorKey === legacyCreatorKey` |
-| Soft delete de estrella legacy | Si | No | No | No |
-| Cambiar metadata del cielo o personalizacion global | Si | No | No | No |
-| Gestionar miembros e invitaciones | Si | No | No | No |
+| Accion | `owner` | `editor` | `viewer` |
+| --- | --- | --- | --- |
+| Ver cielo y estrellas | Si | Si | Si |
+| Crear estrella nueva | Si | Si | No |
+| Editar, mover o reemplazar imagen de estrella propia | Si | Si | No |
+| Soft delete de estrella propia | Si | Si | No |
+| Cambiar metadata del cielo o personalizacion global | Si | No | No |
+| Gestionar miembros e invitaciones | Si | No | No |
 
 ### Capas adicionales recomendadas
 
@@ -355,14 +348,9 @@ Campos orientativos:
 - `ownerUserId`
 - `privacy`
 - `coverImagePath`
-- `source`
-- `importBatch`
-- `legacyCreatorKeys`
+- `personalization`
 - `createdAt`
 - `updatedAt`
-- `claimStatus` (campo histórico — superado)
-- `claimedByUserIds` (campo histórico — superado)
-- `personalization`
 
 #### `skies/{skyId}/stars`
 
@@ -375,7 +363,6 @@ Campos orientativos:
 - `title`
 - `message`
 - `imagePath`
-- `legacyUrl`
 - `xNormalized`
 - `yNormalized`
 - `year`
@@ -385,8 +372,6 @@ Campos orientativos:
 - `updatedAt`
 - `deletedAt`
 - `deletedByUserId`
-- `legacyCreatorKey`
-- `legacyDocId`
 
 #### `skies/{skyId}/members`
 
@@ -401,7 +386,6 @@ Campos orientativos:
 - `invitedByUserId`
 - `joinedAt`
 - `status`
-- `claimedLegacyCreatorKey` (campo histórico — superado)
 
 #### `invites`
 
@@ -419,29 +403,6 @@ Campos orientativos:
 - `status`
 - `acceptedByUserId`
 - `acceptedAt`
-
-#### `legacyClaims`
-
-> **[Superado 2026-03-14]** Esta colección no fue implementada. El flujo de claim fue cancelado. Ver §11.
-
-Proposito:
-
-- Registrar solicitudes de claim, revision administrativa, decisiones y reversiones.
-
-Campos orientativos:
-
-- `claimKey`
-- `skyId`
-- `claimantUserId`
-- `legacyCreatorKey`
-- `status`
-- `evidenceSummary`
-- `decisionReason`
-- `attemptCount`
-- `lastSubmittedAt`
-- `reviewedByUserId`
-- `submittedAt`
-- `reviewedAt`
 
 ### Principios del modelo
 
@@ -496,33 +457,6 @@ La migracion debe ser segura, trazable e idempotente. El objetivo no es mover da
   - `yNormalized = clamp(y / 100, 0, 1)`
 - La estrella que no tiene imagen tambien se migra, con `imagePath = null`.
 
-### Reclamacion de contenido legado
-
-> **[Superado 2026-03-14]** Esta seccion queda como trazabilidad historica. El flujo de claim legacy fue superado por la decision de ownership directa (ver decision en §11). El cielo legacy queda bajo propiedad directa del usuario principal y la colaboracion con el segundo creator se resuelve via invitacion estandar.
-
-Dado que hoy no esta confirmado que existan cuentas reutilizables asociadas a `createdBy`, el contenido legado no debe asumirse como ya vinculado a una identidad nueva.
-
-Decision operativa cerrada:
-
-- El claim ocurre despues de login y email verificado.
-- El usuario reclama un `legacyCreatorKey` concreto.
-- No existe matching automatico por email, nombre ni heuristicas; el usuario inicia el claim desde un CTA generico para cuentas verificadas elegibles.
-- La evidencia es aportada por el usuario y solo se guarda `evidenceSummary`.
-- No se almacenan respuestas crudas ni se reexpone contenido intimo del legado en quizzes.
-- Cada intento usa un `claimKey` deterministico derivado de `(skyId, legacyCreatorKey, claimantUserId)`.
-- Solo puede existir un claim activo por combinacion `(skyId, legacyCreatorKey, claimantUserId)`.
-- No se permiten reenvios mientras el claim este en `submitted` o `approved_partial`.
-- Si el claim termina en `rejected`, `revoked` o `disputed`, solo administracion puede reabrirlo o habilitar un nuevo intento.
-- El primer claim aprobado mueve el cielo a `partially_claimed` y otorga acceso limitado como `legacy_claimant`.
-- Solo cuando el claim se resuelve por completo se activan roles normales (`owner` y `editor`).
-- Si hay inconsistencia o disputa, el cielo pasa a `disputed`.
-
-Esto evita:
-
-- Asignaciones erroneas.
-- Exponer contenido sensible legacy como mecanismo de validacion.
-- Perdida de trazabilidad durante el relanzamiento.
-
 ### Migracion de imagenes
 
 Objetivo:
@@ -546,12 +480,6 @@ Plan estructural:
   - `storagePath`
   - `downloadURL`
   - `legacyDocIds`
-- El tooling admin-only usa:
-  - `npm run migrate:images` (dry-run por defecto)
-  - `npm run migrate:stars` (dry-run por defecto)
-  - `npm run validate:migration` (post-migracion)
-- Cualquier corrida con escritura real exige `--execute --backup-uri=gs://...`.
-
 ### Backup y validacion
 
 > **[Archivado — Fase 3]** Migración completada. Los reportes JSON son artefactos históricos gitignored.
@@ -618,128 +546,9 @@ Los siguientes puntos siguen abiertos y deberan refinarse antes de entrar a impl
 - Que estilo visual exacto debe tener el rediseno de marca y producto?
 - Definir el motor grafico final: evolucion del Canvas 2D, WebGL con shaders ligeros, texturas pre-renderizadas, o combinacion.
 
-## 13. Roadmap refinado
+## 13. Roadmap
 
-El roadmap esta organizado en 8 fases con dependencias claras. Cada fase tiene tareas concretas y entregables verificables. El detalle completo de cada tarea esta en el plan de implementacion.
-
-### Fase 0 - Auditoria y preparacion
-
-- Exportar respaldo completo de Firestore a GCS.
-- Script de auditoria sobre coleccion legacy `stars` (conteos, campos, coordenadas, fechas).
-- Inventariar imagenes en Cloudinary via API.
-- Cruce Firestore -> Cloudinary con preview de assets migrables y excluidos.
-- Checklist go / no-go previo a migracion.
-- Documentar costos y limites de Firebase y Cloudinary para `26` assets referenciados.
-- Cerrar decisiones bloqueantes (completado: ver seccion 11).
-
-### Fase 1 - Scaffolding Next.js + motor visual
-
-- Consolidar el proyecto Next.js actual (App Router + TypeScript) como base del producto.
-- Migrar SkyEngine.ts sin cambios como modulo client-side.
-- Crear wrapper SkyCanvas con `"use client"` + dynamic import `ssr: false`.
-- Crear ruta `/demo` que reproduzca el cielo identico al demo actual.
-- Configurar ESLint CLI no interactivo.
-- Dejar App Hosting y cualquier decision de despliegue SSR para la fase de lanzamiento.
-
-### Fase 2 - Autenticacion y sesiones seguras
-
-- Configurar Firebase Auth SDK (client) y Firebase Admin SDK (server).
-- Implementar flujo de sesion con cookies HTTP-only (idToken -> createSessionCookie -> Set-Cookie).
-- Aplicar politica de sesion del MVP: TTL `5` dias, renovacion deslizante `24` horas y `SameSite=Lax`.
-- Middleware Next.js para proteger rutas privadas.
-- Paginas de auth: login, registro, recuperacion de contrasena.
-- Crear coleccion `users/{uid}` al registrarse.
-- Logout con revocacion de sesion.
-- Verificacion de email.
-- Bloquear claim legacy e invitaciones hasta contar con email verificado.
-
-### Fase 3 - Modelo de datos y CRUD de cielos
-
-> **[Parcialmente superado]** Fase 3 completada en su mayoría. Las tareas de `legacyClaims` y `legacy_claimant` no aplican (claim cancelado, ver §11). El resto fue implementado.
-
-- Crear colecciones: skies, stars (sub), members (sub), invites, ~~legacyClaims~~ (superado).
-- Definir tipos TypeScript del modelo completo.
-- Modelar roles `owner`, `editor`, `viewer` ~~y `legacy_claimant`~~ (superado), junto con autoria de estrella y personalizacion persistente del cielo.
-- Dashboard con lista de cielos del usuario.
-- Dashboard con estados mixtos de onboarding: cielo nuevo, invitacion pendiente ~~y claim legacy pendiente~~ (superado).
-- Creacion de cielo nuevo con membresia automatica.
-- Editor de cielo con SkyCanvas como fondo + capa overlay para estrellas de usuario.
-- Visualizacion de estrella (modal con contenido).
-- Reglas de seguridad de Firestore desplegadas.
-
-### Fase 4 - Imagenes, invitaciones y colaboracion
-
-Paralelizable internamente: imagenes (4.A) e invitaciones (4.B) pueden desarrollarse en paralelo.
-
-#### 4.A - Imagenes (Firebase Storage)
-- Configurar Storage con reglas de seguridad (5MB max, solo imagenes, solo owner/editor).
-- Componente de upload con preview, compresion client-side y progreso.
-- Servir imagenes con getDownloadURL.
-
-#### 4.B - Invitaciones
-- Generar enlace con token unico y expiracion (7 dias).
-- Pagina de aceptacion de invitacion.
-- Panel de gestion de miembros (roles y revocacion).
-
-#### 4.C - Presencia y tiempo real
-- Firebase Realtime Database para presencia online con onDisconnect.
-- Indicador de colaboradores activos en el editor.
-- Sincronizacion de estrellas con onSnapshot de Firestore.
-
-### Fase 5 - Migracion del legado
-
-> **[Superado 2026-03-14 / Fase 3]** Migración y archivo completados. `legacyClaims` no fue implementado. La interfaz admin de reclamación fue cancelada.
-
-- Script de migracion de estrellas: completado. Cielo `shared-legacy-v1` existe con ownership directo.
-- Script de migracion de imagenes: completado. Assets Cloudinary migrados a Firebase Storage.
-- ~~Crear registros `legacyClaims` para el flujo administrativo de reclamacion.~~ (Superado)
-- Script de validacion post-migracion: completado (checkpoint histórico — no reejecutar).
-- ~~Interfaz admin para reclamacion de cielos legacy, aprobacion parcial/final, disputa y revocacion.~~ (Superado)
-
-### Fase 6 - Pulido visual, UX y landing
-
-Paralelizable con Fase 5.
-
-- Landing page con SkyCanvas inmersivo.
-- Rediseno de dashboard y editor.
-- Responsive completo (desktop + movil).
-- Accesibilidad WCAG AA.
-- Optimizacion de rendimiento (lazy loading, next/image, bundle size).
-
-### Fase 7 - Estabilizacion y lanzamiento
-
-- Auditoria de seguridad completa (reglas, endpoints, cookies, roles, App Check).
-- Testing integral en multiples navegadores y dispositivos.
-- Migracion final en produccion + validacion.
-- Monitoreo basico (Performance Monitoring, alertas).
-- Ejecutar deploy final en la plataforma elegida para produccion.
-- Documentacion actualizada.
-
-### Grafo de dependencias
-
-```
-Fase 0 (Auditoria)
-  |
-  v
-Fase 1 (Next.js + Motor visual)
-  |
-  v
-Fase 2 (Auth + Sesiones)
-  |
-  v
-Fase 3 (Modelo datos + CRUD)
-  |
-  +---> Fase 4.A (Imagenes)  ---+
-  |                              |
-  +---> Fase 4.B (Invitaciones) +---> Fase 4.C (Tiempo real)
-  |                              |
-  +---> Fase 5 (Migracion) -----+  (requiere 3 + 4.A)
-  |                              |
-  +---> Fase 6 (Visual/UX) -----+  (requiere 4, paralelizable con 5)
-                                 |
-                                 v
-                           Fase 7 (Lanzamiento)
-```
+Fases 0–7 completadas. Ver §11 para el registro histórico de decisiones.
 
 ## 14. Como se seguira puliendo este documento
 

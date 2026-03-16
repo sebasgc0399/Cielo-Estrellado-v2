@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
-import type { SkyRecord, MemberRecord, MemberRole, SkySource, StarRecord } from '@/domain/contracts'
+import type { SkyRecord, MemberRecord, MemberRole, StarRecord } from '@/domain/contracts'
 import type { StarEntry } from '@/lib/skies/getSkyStars'
 import type { UserStar } from '@/engine/SkyEngine'
 import { firebaseFirestore } from '@/lib/firebase/client'
@@ -31,10 +31,6 @@ const roleLabels: Record<MemberRole, string> = {
   viewer: 'Espectador',
 }
 
-const sourceLabels: Record<SkySource, string> = {
-  native: 'Nativo',
-  legacy_import: 'Importado',
-}
 
 export function SkyDetailContent({
   skyId,
@@ -589,18 +585,10 @@ export function SkyDetailContent({
             {hasStorageImage ? (
               <StarImage
                 imagePath={star.imagePath}
-                legacyUrl={star.legacyUrl}
                 className={styles.editImagePreview}
               />
             ) : (
               <>
-                {star.legacyUrl && !editImagePreviewUrl && (
-                  <StarImage
-                    imagePath={null}
-                    legacyUrl={star.legacyUrl}
-                    className={styles.editImagePreview}
-                  />
-                )}
                 {editImagePreviewUrl && (
                   <div className={styles.editImageWrapper}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -813,7 +801,6 @@ export function SkyDetailContent({
                 <>
                   <StarImage
                     imagePath={entry.star.imagePath}
-                    legacyUrl={entry.star.legacyUrl}
                     className={styles.starThumbnail}
                   />
                   <p className={styles.starTitle}>
@@ -910,7 +897,6 @@ export function SkyDetailContent({
         <div className={styles.badges}>
           <span className={styles.badge}>{roleLabels[member.role]}</span>
           <span className={styles.badge}>Privado</span>
-          <span className={styles.badge}>{sourceLabels[sky.source]}</span>
         </div>
         <p className={styles.meta}>
           Creado el{' '}
