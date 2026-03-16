@@ -53,5 +53,24 @@ service firebase.storage {
       // delete: cerrado en este corte
       allow delete: if false;
     }
+
+    // Compatibilidad legacy: imágenes importadas bajo legacy/stars/{fileName}
+    // Solo lectura para miembros activos del cielo shared-legacy-v1.
+    // Writes permanecen cerrados.
+    match /legacy/stars/{fileName} {
+
+      function legacyMemberRef() {
+        return /databases/(default)/documents/skies/shared-legacy-v1/members/$(request.auth.uid);
+      }
+
+      function isActiveSharedLegacyMember() {
+        return firestore.exists(legacyMemberRef())
+          && firestore.get(legacyMemberRef()).data.status == 'active'
+          && firestore.get(legacyMemberRef()).data.role in ['owner', 'editor', 'viewer'];
+      }
+
+      allow read: if request.auth != null && isActiveSharedLegacyMember();
+      allow write: if false;
+    }
   }
 }
