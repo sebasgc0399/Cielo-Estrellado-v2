@@ -11,7 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
-
+.firebase/
 # Next.js
 .next/
 out/
@@ -31,6 +31,8 @@ next-env.d.ts
 # Firebase credentials
 scripts/serviceAccountKey.json
 scripts/*-report.json
+firebase-key.json
+*-key.json
 
 # Environment variables
 .env
