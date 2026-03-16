@@ -40,22 +40,19 @@ Hoy el repositorio ya no esta en Vite como base activa. El estado actual es:
 - Contrato de entorno con `.env.example` y `.env.local`
 - Tooling base con `build`, `lint` y `typecheck`
 
-Lo actual sigue siendo una base de producto temprana, no el producto completo. En este estado:
+Hoy el producto tiene un runtime real y completo. Lo implementado:
 
-- No existe autenticacion implementada.
-- No existe backend de sesiones.
-- No existe modelo de usuarios, cielos, roles o permisos.
-- No existe flujo de invitaciones.
-- No existe integracion runtime visible con Firestore, Storage o Cloudinary.
+- `/login` con autenticacion via email y Google, cookies HTTP-only de sesion (TTL 5 dias, renovacion deslizante).
+- `/app` lista los cielos reales del usuario.
+- `POST /api/skies` crea cielo privado con membership `owner`.
+- `/app/cielos/[skyId]` valida membresia activa server-side.
+- Stars completas: crear, editar, soft-delete, drag-and-drop con coordenadas persistentes.
+- Imagenes por estrella via Firebase Storage.
+- Realtime de stars via Firestore onSnapshot.
+- Canvas visual con SkyEngine (nebula, twinkling, estrellas atmosfericas).
+- Panel de colaboradores: invitaciones con enlace unico (7 dias), miembros activos, pendientes, revocacion transaccional.
 
-Si existe trabajo ya implementado que sirve como base real:
-
-- La migracion visual a Next.js.
-- El baseline visual en `/demo`.
-- La conservacion del motor de cielo actual.
-- Los scripts de auditoria para inspeccionar el legado antes de migrar datos.
-
-Conclusion: la reconstruccion no debe tratarse como una simple refactorizacion incremental del frontend actual. Debe tratarse como una nueva aplicacion que reaprovecha ideas visuales, pero redefine la arquitectura del producto.
+La reconstruccion ya ocurrio. El trabajo futuro es de mejora de producto (presence/cursores, onboarding, optimizaciones), no de reconstruccion de infraestructura.
 
 ### Legado que si se debe preservar
 
@@ -63,7 +60,7 @@ Aunque el frontend actual no sea la base funcional, si existe un legado de negoc
 
 - Hay estrellas reales ya creadas por usuarios.
 - Esas estrellas viven actualmente en Firestore.
-- Al menos una parte de sus imagenes esta almacenada en Cloudinary.
+- Al menos una parte de sus imagenes estaba almacenada en Cloudinary (migrada a Firebase Storage durante la migracion ya completada).
 - Cada estrella ya tiene informacion util como autor, fecha, contenido y posicion.
 
 Ejemplo de campos observados en el legado:
@@ -101,7 +98,7 @@ No se conserva como base obligatoria:
 
 - La arquitectura frontend actual en Vite.
 - El modelo actual implicito de "estrellas sueltas" sin entidad formal de cielo.
-- La dependencia futura de Cloudinary.
+- La dependencia de Cloudinary fue eliminada en la migracion (ver §9).
 
 ## 4. Objetivo del relanzamiento
 
@@ -161,7 +158,7 @@ La primera version funcional seria del producto debe enfocarse en el caso de uso
 
 ### Onboarding inicial del MVP
 
-> **[Actualizado 2026-03-14]** Los puntos sobre claim legacy CTA y claim pendiente quedan superados (ver §11).
+> **[Actualizado 2026-03-14]** Los puntos sobre reclamacion de cielo y pendientes anteriores quedan superados (ver §11).
 
 - Existe un solo entrypoint despues de login.
 - Si el usuario no tiene cielos ni invitacion, el CTA principal es crear su primer cielo.
@@ -177,7 +174,6 @@ La primera version funcional seria del producto debe enfocarse en el caso de uso
   - `twinkleEnabled`
   - `shootingStarsEnabled`
 - El MVP no persiste preferencias tecnicas del dispositivo como `quality` o `motion`.
-- ~~Mientras un cielo legacy este en `partially_claimed`, nadie puede cambiar su personalizacion global.~~ (Superado: claim legacy ya no aplica)
 
 ## 6. Arquitectura base propuesta
 
@@ -276,8 +272,7 @@ Politica operativa del MVP:
 - Renovacion deslizante cuando resten menos de `24` horas.
 - `SameSite=Lax`.
 - `Secure` en produccion.
-- ~~Claim legacy e invitaciones requieren email verificado.~~ (Superado: claim legacy no aplica. El runtime actual no exige emailVerified para aceptar invitaciones.)
-- Revocacion de sesion en logout, password reset, claim revocado, remocion de miembro o evento admin sensible.
+- Revocacion de sesion en logout, password reset, remocion de miembro o evento admin sensible.
 
 ### Principios de proteccion
 
@@ -410,98 +405,40 @@ Campos orientativos:
 - La estrella no debe existir fuera de un cielo.
 - Las membresias deben separarse del documento principal para permitir permisos claros.
 - La autoria de estrella complementa la membresia y no la reemplaza.
-- La migracion legacy debe quedar trazable.
+- La migracion legacy fue completada. El modelo vigente no incluye campos ni entidades de legado (ver §9).
 
 ## 9. Migracion del legado
 
-La migracion debe ser segura, trazable e idempotente. El objetivo no es mover datos "como sea", sino conservarlos sin bloquear el rediseno.
+Migracion completada. Este registro documenta lo ejecutado y los resultados validados.
 
-### Principios de migracion
+### Resultado de la migracion
 
-- No escribir sobre la coleccion legacy original como primer paso.
-- Exportar respaldo antes de cualquier transformacion.
-- Migrar por fases.
-- Registrar trazabilidad entre documento legacy y documento nuevo.
-- Permitir repetir scripts sin duplicar contenido.
+- `27` estrellas legacy migradas al cielo `shared-legacy-v1`.
+- `26` imagenes copiadas de Cloudinary a Firebase Storage (solo las referenciadas por Firestore).
+- `1` estrella sin imagen migrada con `imagePath = null`.
+- `1` asset huerfano (`stars/vnpubgfatrjzrepaccrz`) excluido del import automatico.
+- `53` assets (`samples/**` y assets root) fuera del import automatico.
+- Cero estrellas perdidas. Cero duplicados por corridas repetidas.
 
-### Estrategia inicial
+### Principios que rigieron la migracion
 
-1. Auditar la coleccion legacy `stars`.
-2. Confirmar la decision manual de importacion vigente para este dataset: un solo cielo `shared-legacy-v1`.
-3. Crear el cielo importado `shared-legacy-v1`.
-4. Copiar cada estrella al nuevo esquema bajo ese cielo unico, preservando `legacyCreatorKey`.
-5. Migrar solo las imagenes de Cloudinary realmente referenciadas por Firestore.
-6. Guardar referencias de origen (`legacyDocId`, `legacyUrl`, estado de migracion).
-7. Marcar el cielo como `unclaimed`, sin `owner` asignado en la importacion.
+- No se escribio sobre la coleccion legacy original.
+- Respaldo dual antes de cualquier transformacion (export oficial a GCS + reportes locales).
+- Trazabilidad entre documento legacy y documento nuevo.
+- Scripts idempotentes.
 
-### Politica de migracion de datos
+### Estado final
 
-- La coleccion legacy `stars` se mantiene intacta como fuente de verdad y backup operativo.
-- Para este dataset se crea un unico cielo importado manual `shared-legacy-v1`.
-- Ese cielo persiste:
-  - `source = legacy_import`
-  - `importBatch = shared-legacy-v1`
-  - `legacyCreatorKeys = [createdBy...]`
-  - `claimStatus = unclaimed`
-- No se asigna `owner` ni `authorUserId` durante la importacion.
-- Cada estrella importada conserva:
-  - `legacyDocId`
-  - `legacyUrl`
-  - `legacyCreatorKey`
-  - `createdAt`
-  - `year`
-  - `title`
-  - `message`
-- Las coordenadas se preservan de forma aproximada:
-  - `xNormalized = clamp(x / 100, 0, 1)`
-  - `yNormalized = clamp(y / 100, 0, 1)`
-- La estrella que no tiene imagen tambien se migra, con `imagePath = null`.
-
-### Migracion de imagenes
-
-Objetivo:
-
-- Cloudinary deja de ser el sistema principal.
-
-Plan estructural:
-
-- Las imagenes nuevas se suben solo a Firebase Storage.
-- Las imagenes legacy se copian a Storage solo si estan referenciadas por Firestore.
-- Durante la migracion se conserva la URL anterior como referencia.
-- Cuando el sistema nuevo este estable, Cloudinary puede quedar solo como respaldo temporal o eliminarse.
-- El asset huerfano `stars/vnpubgfatrjzrepaccrz` queda catalogado como `excluded_pending_review`.
-
-### Politica de migracion de media
-
-- Solo las URLs presentes en Firestore son candidatas a Storage.
-- Los `samples/**` y los assets root de Cloudinary quedan fuera del import automatico.
-- El mapping minimo a persistir por cada asset migrado sera:
-  - `legacyUrl`
-  - `storagePath`
-  - `downloadURL`
-  - `legacyDocIds`
-### Backup y validacion
-
-> **[Archivado — Fase 3]** Migración completada. Los reportes JSON son artefactos históricos gitignored.
-> `validate:migration` falla contra el estado actual del cielo (esperado: ya tiene owner asignado).
-
-- Antes de cualquier migracion real se exige backup dual:
-  - Export oficial de Firestore a GCS.
-  - Snapshots locales: `audit-report.json`, `cloudinary-report.json` y `migration-crossref-report.json`.
-- Validacion operativa post-migracion: `scripts/migration-images-report.json`, `scripts/migration-stars-report.json` y `scripts/migration-validation-report.json`.
-- Go / no-go minimo:
-  - conteos esperados confirmados
-  - `26` assets migrables
-  - `1` asset huerfano excluido
-  - `1` estrella sin imagen aceptada
-  - cero estrellas perdidas
-  - cero duplicados creados por corridas repetidas
+- La coleccion `stars` original se conserva intacta como backup.
+- El cielo `shared-legacy-v1` quedo bajo ownership directa del usuario principal (ver §11, 2026-03-14).
+- Cloudinary dejo de ser parte del runtime. Firebase Storage es el sistema operativo de imagenes.
+- Los reportes de migracion son artefactos historicos gitignored.
+- `validate:migration` falla contra el estado actual del cielo (esperado: ya tiene owner asignado).
 
 ## 10. Riesgos y decisiones abiertas
 
 Los siguientes puntos siguen abiertos y deberan refinarse antes de entrar a implementacion completa:
 
-- Confirmar limites, costos y velocidad practica de copiar `26` assets desde Cloudinary a Storage.
 - Definir si la colaboracion en tiempo real mostrara solo cambios persistidos o tambien presencia visual en vivo.
 - Definir el motor grafico final del editor: evolucion del canvas actual, WebGL propio o una libreria especializada.
 - Definir proveedor de correo para invitaciones y notificaciones.
@@ -526,17 +463,17 @@ Los siguientes puntos siguen abiertos y deberan refinarse antes de entrar a impl
 - Las coordenadas legacy se preservan de forma aproximada con `xNormalized` y `yNormalized`.
 - La coleccion legacy `stars` se conserva intacta como backup. Solo se elimina despues de validar la migracion.
 - Este dataset se importa como un unico cielo manual `shared-legacy-v1`.
-- El dato bruto legado se guarda como `legacyCreatorKeys`.
-- La reclamacion de cielos legacy sera asistida por administracion y requiere email verificado.
-- El primer claim aprobado crea `legacy_claimant`, no `owner`.
-- La evidencia del claim se resume en `evidenceSummary`; no se persiste evidencia cruda del usuario ni quizzes derivados del legado.
+- El dato bruto legado se guarda como `legacyCreatorKeys`. (Historico — campo no presente en modelo vigente; ver 2026-03-15)
+- La reclamacion de cielos legacy sera asistida por administracion y requiere email verificado. (Historico — claim legacy superado; ver 2026-03-14)
+- El primer claim aprobado crea `legacy_claimant`, no `owner`. (Historico — `legacy_claimant` eliminado del runtime; ver 2026-03-14)
+- La evidencia del claim se resume en `evidenceSummary`; no se persiste evidencia cruda del usuario ni quizzes derivados del legado. (Historico — evidenceSummary y quizzes descartados; ver 2026-03-14)
 - El cielo debe verse muy realista (como un telescopio profesional) pero optimizado para movil. Se buscara un equilibrio calidad/rendimiento.
 - Solo se migran las `26` imagenes realmente referenciadas por Firestore.
 - Los assets `samples/**`, los root assets y `stars/vnpubgfatrjzrepaccrz` quedan fuera del import automatico.
 - Las coordenadas legacy se preservan como porcentajes aproximados normalizados a `0..1`.
 - Antes de migrar se exige backup dual: export oficial a GCS + reportes locales.
 - La sesion del MVP usa cookie HTTP-only de `5` dias, renovacion deslizante de `24` horas y `SameSite=Lax`.
-- Claim legacy e invitaciones requieren email verificado.
+- Claim legacy e invitaciones requieren email verificado. (Historico — claim legacy ya no existe como frente activo; ver 2026-03-14)
 - **[2026-03-14] Transicion a ownership directa del cielo legacy.** El cielo `shared-legacy-v1` queda bajo propiedad directa del usuario principal (uid `G3Sr0P2LAORmFi5yiT8cxwd7n8I2`). El flujo de claim legacy queda superado como frente activo del producto. La colaboracion con el segundo legacy creator se resuelve via invitacion estandar (editor). Los tipos y contratos de claim (`SkyClaimStatus`, `ClaimReviewStatus`, `LegacyClaimRecord`, `legacy_claimant`) se eliminaran del runtime en una fase de simplificacion posterior. El tooling de migracion se revisara en una fase de archivo separada. Las secciones de claim en este documento quedan marcadas como superadas pero se preservan como trazabilidad historica.
 - **[2026-03-15] Fase 3 archivada.** Tooling legacy archivado. Dominio limpiado: `SHARED_LEGACY_IMPORT_CONFIG` removido de `src/domain/`; `DEFAULT_SKY_PERSONALIZATION` movida a `contracts.ts`; scripts marcados como `@deprecated` con semántica histórica explícita. Los bullets anteriores sobre `legacy_claimant`, `evidenceSummary` y flujo de claim son trazabilidad histórica — no representan el modelo activo.
 
